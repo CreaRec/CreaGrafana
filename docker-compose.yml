@@ -33,6 +33,9 @@ services:
     pid: host
     cap_add:
       - SYS_PTRACE
+    # AppArmor otherwise blocks /proc/<pid>/fd reads needed by ss -p
+    security_opt:
+      - apparmor:unconfined
     volumes:
       - ./config/listen-ports/export.sh:/export.sh:ro
       - ./data/listen-ports:/textfile

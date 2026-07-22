@@ -31,7 +31,7 @@ ls -la data/listen-ports/
 # Explore (Mimir): host_socket_listen
 ```
 
-Needs `network_mode: host`, `pid: host`, and `SYS_PTRACE` for process names in `ss -p`.
+Needs `network_mode: host`, `pid: host`, `SYS_PTRACE`, and `apparmor:unconfined` for process names in `ss -p`.
 
 ## Config changes
 
