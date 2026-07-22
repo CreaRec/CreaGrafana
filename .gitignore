@@ -1,0 +1,6 @@
+.env
+data/**
+!data/.gitkeep
+*.log
+.DS_Store
+examples/node-otel/node_modules/

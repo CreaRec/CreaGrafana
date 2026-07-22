@@ -1,0 +1,88 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  DEPLOY_DIR: /home/crearec/crea-grafana
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required config files
+        run: |
+          set -euo pipefail
+          test -f docker-compose.yml
+          test -f config/alloy/config.alloy
+          test -f config/loki/loki.yaml
+          test -f config/tempo/tempo.yaml
+          test -f config/mimir/mimir.yaml
+          test -f config/grafana/provisioning/datasources/datasources.yaml
+          test -f config/grafana/provisioning/dashboards/dashboards.yaml
+          test -f config/grafana/dashboards/lgtm-overview.json
+          test -f .env.example
+
+      - name: Create external network for compose config
+        run: docker network create lgtm || true
+
+      - name: Validate compose file
+        run: |
+          cp .env.example .env
+          docker compose config -q
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ secrets.DEPLOY_HOST }}
+
+      - name: Setup SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy compose pull/up
+        env:
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          SERVER_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          SSH_TARGET="${SSH_USER}@${SERVER_HOST}"
+          SSH=(ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes)
+          SCP=(scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes)
+
+          "${SSH[@]}" "$SSH_TARGET" "mkdir -p '${DEPLOY_DIR}/data/alloy' '${DEPLOY_DIR}/data/loki' '${DEPLOY_DIR}/data/tempo' '${DEPLOY_DIR}/data/mimir' '${DEPLOY_DIR}/data/grafana' '${DEPLOY_DIR}/config'"
+          "${SCP[@]}" docker-compose.yml "${SSH_TARGET}:${DEPLOY_DIR}/docker-compose.yml"
+          "${SCP[@]}" -r config "${SSH_TARGET}:${DEPLOY_DIR}/"
+
+          "${SSH[@]}" "$SSH_TARGET" bash -s <<EOF
+          set -euo pipefail
+          cd '${DEPLOY_DIR}'
+
+          if [ ! -f .env ]; then
+            echo "ERROR: ${DEPLOY_DIR}/.env is missing. Bootstrap .env on the server first (see docs/docker.md)." >&2
+            exit 1
+          fi
+
+          docker network create lgtm 2>/dev/null || true
+          docker compose pull
+          docker compose up -d
+          docker compose ps
+          docker compose logs --tail=40
+          EOF

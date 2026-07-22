@@ -1,0 +1,82 @@
+name: crea-grafana
+
+services:
+  alloy:
+    image: ${ALLOY_IMAGE:-grafana/alloy:v1.7.5}
+    restart: unless-stopped
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+    volumes:
+      - ./config/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./data/alloy:/var/lib/alloy/data
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "${ALLOY_UI_BIND:-127.0.0.1}:12345:12345"
+    depends_on:
+      - loki
+      - tempo
+      - mimir
+    networks:
+      - lgtm
+
+  loki:
+    image: ${LOKI_IMAGE:-grafana/loki:3.4.2}
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./data/loki:/loki
+    networks:
+      - lgtm
+
+  tempo:
+    image: ${TEMPO_IMAGE:-grafana/tempo:2.7.1}
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./config/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - ./data/tempo:/var/tempo
+    networks:
+      - lgtm
+
+  mimir:
+    image: ${MIMIR_IMAGE:-grafana/mimir:2.15.0}
+    restart: unless-stopped
+    command: ["-config.file=/etc/mimir/mimir.yaml"]
+    volumes:
+      - ./config/mimir/mimir.yaml:/etc/mimir/mimir.yaml:ro
+      - ./data/mimir:/data
+    networks:
+      - lgtm
+
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:11.5.2}
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-changeme}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_FEATURE_TOGGLES_ENABLE: traceqlEditor,traceToMetrics,traceToLogs
+      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL:-http://localhost:3000}
+    volumes:
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./data/grafana:/var/lib/grafana
+    ports:
+      - "${GRAFANA_BIND:-127.0.0.1}:3000:3000"
+    depends_on:
+      - loki
+      - tempo
+      - mimir
+    networks:
+      - lgtm
+
+networks:
+  lgtm:
+    name: lgtm
+    external: true

@@ -1,0 +1,13 @@
+---
+description: Require validation for stack/config changes and verify after implementation
+alwaysApply: true
+---
+
+# Testing / Validation Requirements
+
+This repo is infrastructure (Compose + Grafana configs), not an application test suite.
+
+- For every meaningful change to `docker-compose.yml` or `config/`, update or add checks that CI can run (file presence, `docker compose config`, or documented smoke steps on the **server**).
+- Prefer verifying on the deployed host (Actions deploy + `docker compose ps` / logs), not by running the full LGTM stack on the agent’s local machine.
+- After implementation, state the exact commands the user should run to validate (CI, or server-side compose commands). If those cannot be run from the agent, say so and leave them for the user.
+- Do not treat “it looks right in the repo” as enough for deploy-facing changes; call out server bootstrap and Actions secrets when they are required.
