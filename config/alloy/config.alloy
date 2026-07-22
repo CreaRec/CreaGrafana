@@ -46,6 +46,21 @@ prometheus.remote_write "mimir" {
   }
 }
 
+// Host listen sockets written by the listen-ports sidecar (ss → textfile).
+prometheus.exporter.unix "textfile" {
+  set_collectors = ["textfile"]
+
+  textfile {
+    directory = "/var/lib/alloy/textfile"
+  }
+}
+
+prometheus.scrape "unix_textfile" {
+  targets         = prometheus.exporter.unix.textfile.targets
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+}
+
 // Logs → Loki (OTLP HTTP)
 otelcol.exporter.otlphttp "loki" {
   client {

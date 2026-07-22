@@ -14,10 +14,24 @@ docker compose ps
 docker compose logs -f
 docker compose logs --tail=100 alloy
 docker compose logs --tail=100 grafana
+docker compose logs --tail=50 listen-ports
 docker compose restart
 docker compose stop
 docker compose up -d
 ```
+
+## Host listen ports
+
+Sidecar `listen-ports` runs `ss -tulpn` every 15s into `data/listen-ports/` (Prometheus textfile). Alloy scrapes that file into Mimir. Dashboard: **CreaGrafana → Host listen ports**.
+
+```sh
+docker compose ps listen-ports alloy
+docker compose logs --tail=50 listen-ports
+ls -la data/listen-ports/
+# Explore (Mimir): host_socket_listen
+```
+
+Needs `network_mode: host`, `pid: host`, and `SYS_PTRACE` for process names in `ss -p`.
 
 ## Config changes
 
@@ -43,7 +57,7 @@ docker system df
 ```sh
 docker compose ps
 docker network inspect lgtm
-docker compose logs --tail=100 alloy loki tempo mimir grafana
+docker compose logs --tail=100 alloy loki tempo mimir grafana listen-ports
 ```
 
 Compose fails with “network lgtm declared as external but could not be found”:

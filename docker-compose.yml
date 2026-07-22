@@ -12,6 +12,7 @@ services:
     volumes:
       - ./config/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - ./data/alloy:/var/lib/alloy/data
+      - ./data/listen-ports:/var/lib/alloy/textfile:ro
     ports:
       - "4317:4317"   # OTLP gRPC
       - "4318:4318"   # OTLP HTTP
@@ -20,8 +21,22 @@ services:
       - loki
       - tempo
       - mimir
+      - listen-ports
     networks:
       - lgtm
+
+  # Host listen/unbound sockets → Prometheus textfile for Alloy (needs host net + pid).
+  listen-ports:
+    image: ${LISTEN_PORTS_IMAGE:-alpine:3.21}
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - ./config/listen-ports/export.sh:/export.sh:ro
+      - ./data/listen-ports:/textfile
+    command: ["sh", "/export.sh"]
 
   loki:
     image: ${LOKI_IMAGE:-grafana/loki:3.4.2}
