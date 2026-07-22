@@ -1,25 +1,35 @@
-import { metrics, trace } from "@opentelemetry/api";
-import { logs, SeverityNumber } from "@opentelemetry/api-logs";
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
-import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { resourceFromAttributes } from "@opentelemetry/resources";
-import {
+"use strict";
+
+const { metrics, trace } = require("@opentelemetry/api");
+const { logs, SeverityNumber } = require("@opentelemetry/api-logs");
+const {
+  OTLPLogExporter,
+} = require("@opentelemetry/exporter-logs-otlp-http");
+const {
+  OTLPMetricExporter,
+} = require("@opentelemetry/exporter-metrics-otlp-http");
+const {
+  OTLPTraceExporter,
+} = require("@opentelemetry/exporter-trace-otlp-http");
+const { Resource } = require("@opentelemetry/resources");
+const {
   BatchLogRecordProcessor,
   LoggerProvider,
-} from "@opentelemetry/sdk-logs";
-import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
-import { NodeSDK } from "@opentelemetry/sdk-node";
-import { SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
-const endpoint =
-  process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.replace(/\/$/, "") ||
-  "http://127.0.0.1:4318";
+} = require("@opentelemetry/sdk-logs");
+const {
+  PeriodicExportingMetricReader,
+} = require("@opentelemetry/sdk-metrics");
+const { NodeSDK } = require("@opentelemetry/sdk-node");
+const { SimpleSpanProcessor } = require("@opentelemetry/sdk-trace-base");
+
+const endpoint = (
+  process.env.OTEL_EXPORTER_OTLP_ENDPOINT || "http://127.0.0.1:4318"
+).replace(/\/$/, "");
 
 const serviceName = process.env.OTEL_SERVICE_NAME || "crea-grafana-example";
-const serviceNamespace =
-  process.env.OTEL_SERVICE_NAMESPACE || "examples";
+const serviceNamespace = process.env.OTEL_SERVICE_NAMESPACE || "examples";
 
-const resource = resourceFromAttributes({
+const resource = new Resource({
   "service.name": serviceName,
   "service.namespace": serviceNamespace,
   "deployment.environment": process.env.DEPLOY_ENV || "local",
@@ -70,7 +80,7 @@ async function runOnce() {
       body: `example work completed trace_id=${traceId}`,
       attributes: {
         route: "/demo",
-        "trace_id": traceId,
+        trace_id: traceId,
       },
     });
 
@@ -79,15 +89,23 @@ async function runOnce() {
   });
 }
 
-console.log(`Sending OTLP to ${endpoint}`);
-console.log(`service.name=${serviceName} service.namespace=${serviceNamespace}`);
+async function main() {
+  console.log(`Sending OTLP to ${endpoint}`);
+  console.log(
+    `service.name=${serviceName} service.namespace=${serviceNamespace}`,
+  );
 
-await runOnce();
-await runOnce();
-await runOnce();
+  await runOnce();
+  await runOnce();
+  await runOnce();
 
-// Give exporters time to flush before exit.
-await new Promise((r) => setTimeout(r, 8000));
-await sdk.shutdown();
-await loggerProvider.shutdown();
-console.log("Done. Check Grafana Explore for logs, traces, and metrics.");
+  await new Promise((r) => setTimeout(r, 8000));
+  await sdk.shutdown();
+  await loggerProvider.shutdown();
+  console.log("Done. Check Grafana Explore for logs, traces, and metrics.");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
