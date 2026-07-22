@@ -22,7 +22,7 @@ docker compose up -d
 
 ## Host listen ports
 
-Sidecar `listen-ports` runs `ss -tlnp` every 15s (TCP LISTEN only — for picking free ports) into `data/listen-ports/` (Prometheus textfile). Alloy scrapes that file into Mimir. Dashboard: **CreaGrafana → Host listen ports**.
+Sidecar `listen-ports` runs `ss -tulpn` every 15s (TCP LISTEN only — for picking free ports) into `data/listen-ports/` (Prometheus textfile). Alloy scrapes that file into Mimir. Dashboard: **CreaGrafana → Host listen ports**.
 
 ```sh
 docker compose ps listen-ports alloy

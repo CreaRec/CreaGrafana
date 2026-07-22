@@ -1,5 +1,5 @@
 #!/bin/sh
-# Snapshot host TCP LISTEN sockets (ss -tlnp) into a Prometheus textfile.
+# Snapshot host TCP LISTEN sockets (ss -tulpn, tcp only) into a Prometheus textfile.
 # For choosing free ports for new apps. Enriches with Docker container + Compose service.
 set -eu
 
@@ -120,28 +120,17 @@ write_metrics() {
   rows="$(mktemp "${OUT_DIR}/rows.XXXXXX")"
 
   build_docker_maps "${map_dir}"
-  # TCP listening only (skip UDP UNCONN noise).
-  # Note: ss -tlnp often omits the Netid column (State is $1); ss -tulpn includes it.
-  ss -H -tlnp 2>/dev/null >"${ss_out}" || true
+  # Use -tulpn so Netid is present (Alpine/Debian ss -tlnp often omits it). Keep TCP LISTEN only.
+  ss -H -tulpn 2>/dev/null >"${ss_out}" || true
 
   while IFS= read -r line || [ -n "${line}" ]; do
     [ -z "${line}" ] && continue
 
-    col1="$(printf '%s\n' "${line}" | awk '{print $1}')"
-    # Format A (with Netid): tcp LISTEN Recv-Q Send-Q Local Peer ...
-    # Format B (no Netid):   LISTEN Recv-Q Send-Q Local Peer ...
-    case "${col1}" in
-      tcp)
-        state="$(printf '%s\n' "${line}" | awk '{print $2}')"
-        local="$(printf '%s\n' "${line}" | awk '{print $5}')"
-        ;;
-      LISTEN)
-        state="LISTEN"
-        local="$(printf '%s\n' "${line}" | awk '{print $4}')"
-        ;;
-      *) continue ;;
-    esac
+    netid="$(printf '%s\n' "${line}" | awk '{print $1}')"
+    state="$(printf '%s\n' "${line}" | awk '{print $2}')"
+    local="$(printf '%s\n' "${line}" | awk '{print $5}')"
 
+    [ "${netid}" = "tcp" ] || continue
     [ "${state}" = "LISTEN" ] || continue
 
     # Split Local Address:Port (IPv6 is [addr]:port)
@@ -156,11 +145,18 @@ write_metrics() {
         ;;
     esac
 
+    # Skip junk parses (e.g. empty port)
+    [ -n "${port}" ] || continue
+    case "${port}" in
+      *[!0-9]*) continue ;;
+    esac
+
     process="$(printf '%s\n' "${line}" | sed -n 's/.*users:((\"\([^"]*\)\".*/\1/p')"
     if [ -z "${process}" ]; then
       process="unknown"
     fi
-    pid="$(printf '%s\n' "${line}" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | head -n 1)"
+    # Avoid `head` in a pipe under set -e (SIGPIPE can abort the scrape)
+    pid="$(printf '%s\n' "${line}" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | awk 'NR==1 { print; exit }')"
 
     docker_row="$(resolve_docker "${map_dir}" "${pid}" "${port}")"
     container_name="$(printf '%s\n' "${docker_row}" | awk -F '\t' '{print $1}')"
@@ -205,7 +201,7 @@ write_metrics() {
   ' "${rows}" >"${body}"
 
   {
-    printf '%s\n' '# HELP host_socket_listen Host TCP LISTEN sockets (from ss -tlnp); for finding free ports.'
+    printf '%s\n' '# HELP host_socket_listen Host TCP LISTEN sockets (from ss -tulpn); for finding free ports.'
     printf '%s\n' '# TYPE host_socket_listen gauge'
     cat "${body}"
   } >"${tmp}"
