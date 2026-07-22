@@ -120,17 +120,28 @@ write_metrics() {
   rows="$(mktemp "${OUT_DIR}/rows.XXXXXX")"
 
   build_docker_maps "${map_dir}"
-  # TCP listening only (skip UDP UNCONN noise)
+  # TCP listening only (skip UDP UNCONN noise).
+  # Note: ss -tlnp often omits the Netid column (State is $1); ss -tulpn includes it.
   ss -H -tlnp 2>/dev/null >"${ss_out}" || true
 
   while IFS= read -r line || [ -n "${line}" ]; do
     [ -z "${line}" ] && continue
 
-    netid="$(printf '%s\n' "${line}" | awk '{print $1}')"
-    state="$(printf '%s\n' "${line}" | awk '{print $2}')"
-    local="$(printf '%s\n' "${line}" | awk '{print $5}')"
+    col1="$(printf '%s\n' "${line}" | awk '{print $1}')"
+    # Format A (with Netid): tcp LISTEN Recv-Q Send-Q Local Peer ...
+    # Format B (no Netid):   LISTEN Recv-Q Send-Q Local Peer ...
+    case "${col1}" in
+      tcp)
+        state="$(printf '%s\n' "${line}" | awk '{print $2}')"
+        local="$(printf '%s\n' "${line}" | awk '{print $5}')"
+        ;;
+      LISTEN)
+        state="LISTEN"
+        local="$(printf '%s\n' "${line}" | awk '{print $4}')"
+        ;;
+      *) continue ;;
+    esac
 
-    [ "${netid}" = "tcp" ] || continue
     [ "${state}" = "LISTEN" ] || continue
 
     # Split Local Address:Port (IPv6 is [addr]:port)
