@@ -39,7 +39,7 @@ service.name        = stable app id (crea-video-downloader)
 service.namespace   = project group (bots, media, …)
 ```
 
-Use the same values in LogQL / TraceQL / PromQL filters. See [examples/README.md](../examples/README.md).
+Use the same values in LogQL / TraceQL / PromQL filters. Full bot metric/trace naming contract: [telemetry-contract.md](telemetry-contract.md). Wiring: [examples/README.md](../examples/README.md).
 
 ## Grafana access
 

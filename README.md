@@ -18,6 +18,7 @@ Also:
 - [docs/debian-server.md](docs/debian-server.md) — deploy directory layout
 - [docs/debian-commands.md](docs/debian-commands.md) — day-to-day `docker compose` / Portainer
 - [docs/tuning.md](docs/tuning.md) — retention, cardinality, Alloy batching
+- [docs/telemetry-contract.md](docs/telemetry-contract.md) — shared metrics/traces/logs scheme for all bots
 - [examples/README.md](examples/README.md) — app wiring and Explore queries
 
 ## Layout

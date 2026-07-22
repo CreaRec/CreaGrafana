@@ -20,6 +20,8 @@ export OTEL_SERVICE_NAMESPACE=bots
 
 Use stable `service.name` / `service.namespace` values. Filter by them in Grafana Explore and dashboards. Avoid high-cardinality labels (raw URLs, user IDs, message IDs).
 
+**Metric and span names for bots:** follow the shared scheme in [docs/telemetry-contract.md](../docs/telemetry-contract.md) (`bot_updates_total`, `bot_jobs_total`, …).
+
 ## Local smoke test (optional)
 
 Prefer validating against the **deployed** Alloy on the server. If you temporarily run compose on a laptop for debugging:
