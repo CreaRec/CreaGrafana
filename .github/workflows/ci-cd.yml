@@ -27,6 +27,7 @@ jobs:
           test -f config/grafana/dashboards/lgtm-overview.json
           test -f config/grafana/dashboards/host-listen-ports.json
           test -f config/listen-ports/export.sh
+          sh -n config/listen-ports/export.sh
           test -f .env.example
 
       - name: Create external network for compose config

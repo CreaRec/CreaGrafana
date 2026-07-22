@@ -22,7 +22,7 @@ docker compose up -d
 
 ## Host listen ports
 
-Sidecar `listen-ports` runs `ss -tulpn` every 15s into `data/listen-ports/` (Prometheus textfile). Alloy scrapes that file into Mimir. Dashboard: **CreaGrafana → Host listen ports**.
+Sidecar `listen-ports` runs `ss -tlnp` every 15s (TCP LISTEN only — for picking free ports) into `data/listen-ports/` (Prometheus textfile). Alloy scrapes that file into Mimir. Dashboard: **CreaGrafana → Host listen ports**.
 
 ```sh
 docker compose ps listen-ports alloy
@@ -31,7 +31,7 @@ ls -la data/listen-ports/
 # Explore (Mimir): host_socket_listen
 ```
 
-Needs `network_mode: host`, `pid: host`, `SYS_PTRACE`, and `apparmor:unconfined` for process names in `ss -p`.
+Needs `network_mode: host`, `pid: host`, `SYS_PTRACE`, `apparmor:unconfined`, and a read-only `/var/run/docker.sock` mount so `ss -p` can resolve process names and Docker can map published ports / PIDs to `container` + `compose_service` labels.
 
 ## Config changes
 

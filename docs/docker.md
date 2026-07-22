@@ -2,7 +2,7 @@
 
 CreaGrafana runs as Docker Compose on the same Debian host as your bots. Releases sync **compose + config** from git via GitHub Actions on `main`. There is no custom GHCR image and no local deploy script.
 
-Upstream images: `grafana/alloy`, `grafana/loki`, `grafana/tempo`, `grafana/mimir`, `grafana/grafana` (tags pinned in `.env`). Host listen-ports uses `alpine` (see `LISTEN_PORTS_IMAGE`) with `network_mode: host`, `pid: host`, `SYS_PTRACE`, and `apparmor:unconfined` so `ss -tulpn` sees the real host sockets and process names.
+Upstream images: `grafana/alloy`, `grafana/loki`, `grafana/tempo`, `grafana/mimir`, `grafana/grafana` (tags pinned in `.env`). Host listen-ports uses `alpine` (see `LISTEN_PORTS_IMAGE`) with `network_mode: host`, `pid: host`, `SYS_PTRACE`, `apparmor:unconfined`, and `/var/run/docker.sock` (ro) so `ss -tlnp` lists TCP LISTEN ports (for free-port picking) with process names and Docker `container` + Compose `compose_service`.
 
 ## How a release works
 

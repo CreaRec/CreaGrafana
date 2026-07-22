@@ -25,7 +25,7 @@ services:
     networks:
       - lgtm
 
-  # Host listen/unbound sockets → Prometheus textfile for Alloy (needs host net + pid).
+  # Host TCP LISTEN ports → Prometheus textfile for Alloy (needs host net + pid).
   listen-ports:
     image: ${LISTEN_PORTS_IMAGE:-alpine:3.21}
     restart: unless-stopped
@@ -39,6 +39,8 @@ services:
     volumes:
       - ./config/listen-ports/export.sh:/export.sh:ro
       - ./data/listen-ports:/textfile
+      # Map published ports / PIDs → container name + compose service
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     command: ["sh", "/export.sh"]
 
   loki:

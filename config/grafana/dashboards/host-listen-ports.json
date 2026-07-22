@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "Host listening and unbound sockets from ss -tulpn (via listen-ports textfile → Alloy → Mimir).",
+  "description": "TCP ports currently in LISTEN on the host (ss -tlnp). Use this to pick a free port for a new app. Docker container / Compose service when resolvable.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -35,7 +35,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
       "id": 1,
       "options": {
         "colorMode": "value",
@@ -52,13 +52,55 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "mimir" },
-          "expr": "count(host_socket_listen{netid=\"tcp\",state=\"LISTEN\"})",
+          "expr": "count(host_socket_listen)",
           "instant": true,
-          "legendFormat": "tcp listen",
+          "legendFormat": "listens",
           "refId": "A"
         }
       ],
-      "title": "TCP LISTEN",
+      "title": "TCP LISTEN sockets",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "orange", "value": null }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "expr": "count(host_socket_listen{local_addr=~\"^(0\\\\.0\\\\.0\\\\.0|::)$\"})",
+          "instant": true,
+          "legendFormat": "host-wide",
+          "refId": "A"
+        }
+      ],
+      "title": "Host-wide binds (0.0.0.0 / ::)",
       "type": "stat"
     },
     {
@@ -77,49 +119,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "mimir" },
-          "expr": "count(host_socket_listen{netid=\"udp\"})",
-          "instant": true,
-          "legendFormat": "udp",
-          "refId": "A"
-        }
-      ],
-      "title": "UDP sockets",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "mimir" },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "purple", "value": null }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
       "id": 3,
       "options": {
         "colorMode": "value",
@@ -136,13 +136,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "mimir" },
-          "expr": "count(host_socket_listen)",
+          "expr": "count(count by (port) (host_socket_listen))",
           "instant": true,
-          "legendFormat": "all",
+          "legendFormat": "ports",
           "refId": "A"
         }
       ],
-      "title": "All sockets",
+      "title": "Distinct ports",
       "type": "stat"
     },
     {
@@ -171,15 +171,9 @@
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "netid" },
+            "matcher": { "id": "byName", "options": "local_addr" },
             "properties": [
-              { "id": "custom.width", "value": 80 }
-            ]
-          },
-          {
-            "matcher": { "id": "byName", "options": "state" },
-            "properties": [
-              { "id": "custom.width", "value": 100 }
+              { "id": "custom.width", "value": 160 }
             ]
           }
         ]
@@ -210,7 +204,7 @@
           "refId": "A"
         }
       ],
-      "title": "Listening / unbound sockets (ss -tulpn)",
+      "title": "TCP ports in use — pick something not listed (or only bound on 127.0.0.1 if you need host-wide)",
       "transformations": [
         {
           "id": "labelsToFields",
@@ -224,21 +218,23 @@
               "Value": true,
               "__name__": true,
               "instance": true,
-              "job": true
+              "job": true,
+              "netid": true,
+              "state": true
             },
             "indexByName": {
-              "netid": 0,
-              "state": 1,
-              "local_addr": 2,
-              "port": 3,
-              "process": 4
+              "port": 0,
+              "local_addr": 1,
+              "process": 2,
+              "container": 3,
+              "compose_service": 4
             },
             "renameByName": {
-              "local_addr": "local_addr",
-              "netid": "netid",
               "port": "port",
+              "local_addr": "local_addr",
               "process": "process",
-              "state": "state"
+              "container": "container",
+              "compose_service": "compose_service"
             }
           }
         }
