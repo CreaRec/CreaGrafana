@@ -108,7 +108,7 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "max by (service_name) (bot_up{service_namespace=\"$namespace\", service_name=~\"$service\", deployment_environment=~\"$env\"})",
+          "expr": "max by (service_name) (label_replace((bot_up{service_name=~\"$service\", deployment_environment=~\"$env\"} or bot_up{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}), \"service_name\", \"$1\", \"job\", \"^(?:[^/]+/)?(.+)$\"))",
           "instant": true,
           "legendFormat": "{{service_name}}",
           "refId": "A"
@@ -150,7 +150,7 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "sum by (service_name) (rate(bot_updates_total{service_namespace=\"$namespace\", service_name=~\"$service\", deployment_environment=~\"$env\", result=\"success\"}[5m]))",
+          "expr": "sum by (service_name) (label_replace((rate(bot_updates_total{service_name=~\"$service\", deployment_environment=~\"$env\", result=\"success\"}[5m]) or rate(bot_updates_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\", result=\"success\"}[5m])), \"service_name\", \"$1\", \"job\", \"^(?:[^/]+/)?(.+)$\"))",
           "legendFormat": "{{service_name}}",
           "refId": "A"
         }
@@ -191,7 +191,7 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "sum by (service_name) (rate(bot_updates_total{service_namespace=\"$namespace\", service_name=~\"$service\", deployment_environment=~\"$env\", result=\"error\"}[5m]))",
+          "expr": "sum by (service_name) (label_replace((rate(bot_updates_total{service_name=~\"$service\", deployment_environment=~\"$env\", result=\"error\"}[5m]) or rate(bot_updates_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\", result=\"error\"}[5m])), \"service_name\", \"$1\", \"job\", \"^(?:[^/]+/)?(.+)$\"))",
           "legendFormat": "{{service_name}}",
           "refId": "A"
         }
@@ -232,7 +232,7 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(bot_handler_duration_seconds_bucket{service_namespace=\"$namespace\", service_name=~\"$service\", deployment_environment=~\"$env\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, service_name) (label_replace((rate(bot_handler_duration_seconds_bucket{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_handler_duration_seconds_bucket{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m])), \"service_name\", \"$1\", \"job\", \"^(?:[^/]+/)?(.+)$\")))",
           "legendFormat": "{{service_name}} p95",
           "refId": "A"
         }
@@ -355,7 +355,7 @@
           "type": "prometheus",
           "uid": "mimir"
         },
-        "definition": "label_values(bot_updates_total{service_namespace=\"$namespace\"}, deployment_environment)",
+        "definition": "label_values(bot_updates_total{job=~\"($namespace/)?$service\"}, deployment_environment)",
         "hide": 0,
         "includeAll": true,
         "label": "env",
@@ -364,7 +364,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(bot_updates_total{service_namespace=\"$namespace\"}, deployment_environment)",
+          "query": "label_values(bot_updates_total{job=~\"($namespace/)?$service\"}, deployment_environment)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
