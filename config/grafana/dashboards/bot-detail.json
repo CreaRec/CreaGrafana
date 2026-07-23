@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Single-bot drilldown for docs/telemetry-contract.md (handlers, commands, jobs, errors, logs, traces).",
+  "description": "Simple single-bot view: success/error counts, latency, health, logs.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -34,33 +34,10 @@
       "title": "Bots fleet",
       "tooltip": "Back to fleet overview",
       "type": "dashboards"
-    },
-    {
-      "asDropdown": false,
-      "icon": "bolt",
-      "includeVars": false,
-      "keepTime": true,
-      "targetBlank": true,
-      "title": "Tempo Explore",
-      "tooltip": "TraceQL for this service",
-      "type": "link",
-      "url": "/explore?orgId=1&left=%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22query%22:%22%7Bresource.service.name%3D%5C%22${service}%5C%22%7D%22,%22queryType%22:%22traceql%22%7D%5D%7D"
     }
   ],
   "panels": [
     {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 100,
-      "title": "Overview",
-      "type": "row"
-    },
-    {
       "datasource": {
         "type": "prometheus",
         "uid": "mimir"
@@ -68,367 +45,55 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 0,
-        "y": 1
-      },
-      "id": 1,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "sum by (result) ((rate(bot_updates_total{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_updates_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m])))",
-          "legendFormat": "{{result}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Updates by result",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 8,
-        "y": 1
-      },
-      "id": 2,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "sum by (update_kind) ((rate(bot_updates_total{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_updates_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m])))",
-          "legendFormat": "{{update_kind}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Updates by update_kind",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           },
           "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 16,
-        "y": 1
-      },
-      "id": 3,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "sum by (handler) ((bot_inflight{service_name=~\"$service\", deployment_environment=~\"$env\"} or bot_inflight{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}))",
-          "legendFormat": "{{handler}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Inflight by handler",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 8
-      },
-      "id": 101,
-      "title": "Commands & handlers",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 9
-      },
-      "id": 4,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "sum by (command, result) ((rate(bot_commands_total{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_commands_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m])))",
-          "legendFormat": "{{command}} {{result}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Commands by command/result",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 9
-      },
-      "id": 5,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, handler) ((rate(bot_handler_duration_seconds_bucket{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_handler_duration_seconds_bucket{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m]))))",
-          "legendFormat": "{{handler}} p50",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, handler) ((rate(bot_handler_duration_seconds_bucket{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_handler_duration_seconds_bucket{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m]))))",
-          "legendFormat": "{{handler}} p95",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "histogram_quantile(0.99, sum by (le, handler) ((rate(bot_handler_duration_seconds_bucket{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_handler_duration_seconds_bucket{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m]))))",
-          "legendFormat": "{{handler}} p99",
-          "refId": "C"
-        }
-      ],
-      "title": "Handler latency p50 / p95 / p99",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
-        "y": 17
-      },
-      "id": 6,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "sum by (handler, result) ((rate(bot_handler_duration_seconds_count{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_handler_duration_seconds_count{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m])))",
-          "legendFormat": "{{handler}} {{result}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Handler rate by handler/result",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 17
-      },
-      "id": 7,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "sum by (error_type, handler) ((rate(bot_errors_total{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_errors_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m])))",
-          "legendFormat": "{{handler}} {{error_type}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Errors by error_type / handler",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "id": 102,
-      "title": "Jobs",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 8,
         "x": 0,
-        "y": 25
+        "y": 0
       },
-      "id": 8,
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "sum by (job, result) ((rate(bot_jobs_total{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_jobs_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m])))",
-          "legendFormat": "{{job}} {{result}}",
+          "expr": "sum((increase(bot_updates_total{service_name=~\"$service\", deployment_environment=~\"$env\", result=\"success\"}[$__range]) or increase(bot_updates_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\", result=\"success\"}[$__range])))",
+          "legendFormat": "success",
           "refId": "A"
         }
       ],
-      "title": "Jobs by job/result",
-      "type": "timeseries"
+      "title": "Successful requests",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -438,138 +103,59 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
           },
-          "unit": "s"
+          "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 8,
         "x": 8,
-        "y": 25
+        "y": 0
       },
-      "id": 9,
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, job) ((rate(bot_job_duration_seconds_bucket{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_job_duration_seconds_bucket{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m]))))",
-          "legendFormat": "{{job}} p50",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, job) ((rate(bot_job_duration_seconds_bucket{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_job_duration_seconds_bucket{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m]))))",
-          "legendFormat": "{{job}} p95",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "histogram_quantile(0.99, sum by (le, job) ((rate(bot_job_duration_seconds_bucket{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_job_duration_seconds_bucket{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m]))))",
-          "legendFormat": "{{job}} p99",
-          "refId": "C"
-        }
-      ],
-      "title": "Job latency p50 / p95 / p99",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "unit": "Bps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 25
-      },
-      "id": 10,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "sum by (job, direction) ((rate(bot_job_bytes_total{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_job_bytes_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m])))",
-          "legendFormat": "{{job}} {{direction}}",
+          "expr": "sum((increase(bot_updates_total{service_name=~\"$service\", deployment_environment=~\"$env\", result=\"error\"}[$__range]) or increase(bot_updates_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\", result=\"error\"}[$__range])))",
+          "legendFormat": "error",
           "refId": "A"
         }
       ],
-      "title": "Job bytes by job/direction",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
-        "y": 33
-      },
-      "id": 11,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "sum by (media_kind) ((rate(bot_jobs_total{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_jobs_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m])))",
-          "legendFormat": "{{media_kind}}",
-          "refId": "A"
-        }
-      ],
-      "title": "By media_kind (if labeled)",
-      "type": "timeseries"
+      "title": "Failed requests",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -586,11 +172,13 @@
               "options": {
                 "0": {
                   "color": "red",
-                  "text": "down"
+                  "index": 1,
+                  "text": "DOWN"
                 },
                 "1": {
                   "color": "green",
-                  "text": "up"
+                  "index": 0,
+                  "text": "UP"
                 }
               },
               "type": "value"
@@ -609,17 +197,17 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "none"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 33
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 0
       },
-      "id": 12,
+      "id": 3,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -646,20 +234,99 @@
           "refId": "A"
         }
       ],
-      "title": "bot_up (optional)",
+      "title": "Health",
       "type": "stat"
     },
     {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 40
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mimir"
       },
-      "id": 103,
-      "title": "Logs & traces",
-      "type": "row"
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "id": 4,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mimir"
+          },
+          "expr": "sum by (result) ((rate(bot_updates_total{service_name=~\"$service\", deployment_environment=~\"$env\", result=~\"success|error\"}[5m]) or rate(bot_updates_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\", result=~\"success|error\"}[5m])))",
+          "legendFormat": "{{result}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Request rate (success / error)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mimir"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "id": 5,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mimir"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le) ((rate(bot_handler_duration_seconds_bucket{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_handler_duration_seconds_bucket{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m]))))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mimir"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) ((rate(bot_handler_duration_seconds_bucket{service_name=~\"$service\", deployment_environment=~\"$env\"}[5m]) or rate(bot_handler_duration_seconds_bucket{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[5m]))))",
+          "legendFormat": "p95",
+          "refId": "B"
+        }
+      ],
+      "title": "Request latency (p50 / p95)",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -670,9 +337,9 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 12
       },
-      "id": 13,
+      "id": 6,
       "options": {
         "dedupStrategy": "none",
         "enableLogDetails": true,
@@ -694,36 +361,44 @@
           "refId": "A"
         }
       ],
-      "title": "Service logs (trace_id links via Loki derived fields)",
+      "title": "Recent logs",
       "type": "logs"
     },
     {
       "datasource": {
-        "type": "tempo",
-        "uid": "tempo"
+        "type": "loki",
+        "uid": "loki"
       },
       "gridPos": {
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 51
+        "y": 22
       },
-      "id": 14,
+      "id": 7,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
       "targets": [
         {
           "datasource": {
-            "type": "tempo",
-            "uid": "tempo"
+            "type": "loki",
+            "uid": "loki"
           },
-          "limit": 20,
-          "query": "{resource.service.name=~\"$service\" && (name=\"bot.handle_update\" || name=\"bot.command\" || name=~\"bot.job.+\")}",
-          "queryType": "traceql",
-          "refId": "A",
-          "tableType": "traces"
+          "expr": "{service_namespace=\"$namespace\", service_name=~\"$service\"} |~ \"(?i)error|exception|fail\"",
+          "queryType": "range",
+          "refId": "A"
         }
       ],
-      "title": "Recent traces (bot.handle_update / bot.command / bot.job.*)",
-      "type": "traces"
+      "title": "Error logs",
+      "type": "logs"
     }
   ],
   "refresh": "30s",
