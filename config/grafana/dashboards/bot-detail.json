@@ -464,7 +464,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "{service_name=\"$service\"}",
+          "expr": "{service_namespace=\"$namespace\", service_name=\"$service\"}",
           "queryType": "range",
           "refId": "A"
         }
@@ -479,17 +479,9 @@
       "targets": [
         {
           "datasource": { "type": "tempo", "uid": "tempo" },
-          "filters": [
-            {
-              "id": "service-name",
-              "operator": "=",
-              "scope": "resource",
-              "tag": "service.name",
-              "value": ["$service"]
-            }
-          ],
           "limit": 20,
-          "queryType": "traceqlSearch",
+          "query": "{resource.service.name=\"$service\" && (name=\"bot.handle_update\" || name=\"bot.command\" || name=~\"bot.job.+\")}",
+          "queryType": "traceql",
           "refId": "A",
           "tableType": "traces"
         }
@@ -504,13 +496,34 @@
   "templating": {
     "list": [
       {
+        "current": { "selected": true, "text": "bots", "value": "bots" },
+        "datasource": { "type": "prometheus", "uid": "mimir" },
+        "definition": "label_values(bot_updates_total, service_namespace)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(bot_updates_total, service_namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
         "current": {
           "selected": true,
           "text": "crea-video-downloader",
           "value": "crea-video-downloader"
         },
         "datasource": { "type": "prometheus", "uid": "mimir" },
-        "definition": "label_values(bot_updates_total, service_name)",
+        "definition": "label_values(bot_updates_total{service_namespace=\"$namespace\"}, service_name)",
         "hide": 0,
         "includeAll": false,
         "label": "service",
@@ -519,20 +532,20 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(bot_updates_total, service_name)",
+          "query": "label_values(bot_updates_total{service_namespace=\"$namespace\"}, service_name)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
-        "refresh": 2,
+        "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       },
       {
-        "allValue": ".*",
+        "allValue": ".+",
         "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "mimir" },
-        "definition": "label_values(bot_updates_total{service_name=\"$service\"}, deployment_environment)",
+        "definition": "label_values(bot_updates_total{service_namespace=\"$namespace\", service_name=\"$service\"}, deployment_environment)",
         "hide": 0,
         "includeAll": true,
         "label": "env",
@@ -541,10 +554,10 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(bot_updates_total{service_name=\"$service\"}, deployment_environment)",
+          "query": "label_values(bot_updates_total{service_namespace=\"$namespace\", service_name=\"$service\"}, deployment_environment)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
-        "refresh": 2,
+        "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
