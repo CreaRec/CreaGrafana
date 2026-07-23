@@ -345,7 +345,7 @@
         "type": "custom"
       },
       {
-        "allValue": ".+",
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": "All",
