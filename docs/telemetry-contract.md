@@ -15,7 +15,7 @@ Set on the OTEL `Resource` (or via env where supported):
 | `service.name` | `crea-video-downloader` | Stable id; kebab-case; **no** version in the name |
 | `service.namespace` | `bots` | Group: `bots`, `media`, … |
 | `service.version` | `sha-abc1234` or image tag | Optional but recommended |
-| `deployment.environment` | `production` | `production` / `staging` / `local` |
+| `deployment.environment` | `production` | `production` / `staging` / `local`. OTel semconv also has `deployment.environment.name`; Alloy maps either onto Prometheus label `deployment_environment`. |
 
 Env mapping used by our stacks:
 
