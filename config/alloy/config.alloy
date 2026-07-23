@@ -3,7 +3,7 @@
 //   service.name              — e.g. crea-trip-planner
 //   service.namespace         — e.g. bots
 //   deployment.environment    — production | staging | local
-//     (also accepts OTel semconv deployment.environment.name; normalized below)
+//     (also accepts OTel semconv deployment.environment.name)
 
 logging {
   level  = "info"
@@ -21,8 +21,8 @@ otelcol.receiver.otlp "default" {
 
   output {
     metrics = [otelcol.processor.batch.default.input]
-    logs    = [otelcol.processor.batch.default.input]
-    traces  = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.exporter.otlphttp.loki.input]
+    traces  = [otelcol.exporter.otlp.tempo.input]
   }
 }
 
@@ -31,40 +31,18 @@ otelcol.processor.batch "default" {
   send_batch_size = 1024
 
   output {
-    metrics = [otelcol.processor.transform.resource_labels.input]
-    logs    = [otelcol.exporter.otlphttp.loki.input]
-    traces  = [otelcol.exporter.otlp.tempo.input]
-  }
-}
-
-// Copy selected resource attrs onto metric datapoints so they become Prometheus
-// labels (service_name, service_namespace, deployment_environment). Without this,
-// Loki/Tempo still see resources on logs/traces, but Mimir series lack those labels
-// and Bot detail / fleet PromQL filters return No data.
-otelcol.processor.transform "resource_labels" {
-  error_mode = "ignore"
-
-  metric_statements {
-    context = "datapoint"
-
-    statements = [
-      `set(attributes["service.name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil`,
-      `set(attributes["service.namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil`,
-      `set(attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment.name"] != nil`,
-      `set(attributes["deployment.environment"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment"] != nil`,
-    ]
-  }
-
-  output {
     metrics = [otelcol.exporter.prometheus.mimir.input]
   }
 }
 
-// Metrics → Mimir (Prometheus remote-write compatible endpoint).
-// add_metric_suffixes=false: apps already use Prometheus-style names (_total, _seconds).
+// Metrics → Mimir. resource_to_telemetry_conversion copies OTel resource attrs
+// (service.name → service_name, etc.) onto every series so Bot detail PromQL
+// filters work. Apps keep low-cardinality resources only (see telemetry-contract).
+// add_metric_suffixes=false: contract names already include _total / _seconds.
 otelcol.exporter.prometheus "mimir" {
-  add_metric_suffixes = false
-  forward_to          = [prometheus.remote_write.mimir.receiver]
+  add_metric_suffixes              = false
+  resource_to_telemetry_conversion = true
+  forward_to                       = [prometheus.remote_write.mimir.receiver]
 }
 
 prometheus.remote_write "mimir" {
