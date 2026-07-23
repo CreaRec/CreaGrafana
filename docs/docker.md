@@ -7,7 +7,7 @@ Upstream images: `grafana/alloy`, `grafana/loki`, `grafana/tempo`, `grafana/mimi
 ## How a release works
 
 1. Merge or push to `main`.
-2. Actions validates `docker compose config`.
+2. Actions runs `./scripts/test.sh` (config contracts + `docker compose config`).
 3. Actions joins Tailscale (`tag:ci`), SCPs `docker-compose.yml` and `config/` to the server, then runs `docker compose pull && docker compose up -d`.
 
 Secrets and bind addresses stay on the server in `.env`. Data under `data/` is never overwritten by Actions.

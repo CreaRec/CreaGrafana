@@ -26,7 +26,7 @@ Host user: `crearec`. External Docker network: `lgtm` (create once).
 
 Push/merge to `main` runs:
 
-1. `validate` — `docker compose config` (and basic config presence checks)
+1. `test` — `./scripts/test.sh` (config contracts + `docker compose config`)
 2. `deploy` — Tailscale → SCP compose + config → `docker compose pull && up -d`
 
 There is no image publish step. Actions never overwrites `.env` or `data/`.

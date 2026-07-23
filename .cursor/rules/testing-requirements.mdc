@@ -7,7 +7,7 @@ alwaysApply: true
 
 This repo is infrastructure (Compose + Grafana configs), not an application test suite.
 
-- For every meaningful change to `docker-compose.yml` or `config/`, update or add checks that CI can run (file presence, `docker compose config`, or documented smoke steps on the **server**).
+- For every meaningful change to `docker-compose.yml` or `config/`, add or update checks in `scripts/test.sh` (file presence, contract greps, `docker compose config`, or documented smoke steps on the **server**). CI job `test` runs that script.
 - Prefer verifying on the deployed host (Actions deploy + `docker compose ps` / logs), not by running the full LGTM stack on the agent’s local machine.
-- After implementation, state the exact commands the user should run to validate (CI, or server-side compose commands). If those cannot be run from the agent, say so and leave them for the user.
+- After implementation, state the exact commands the user should run to test (locally: `./scripts/test.sh`, or server-side compose commands). If those cannot be run from the agent, say so and leave them for the user.
 - Do not treat “it looks right in the repo” as enough for deploy-facing changes; call out server bootstrap and Actions secrets when they are required.
