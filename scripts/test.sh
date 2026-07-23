@@ -41,6 +41,10 @@ grep -q 'severity_text=~\\"(?i)warn\\"' config/grafana/dashboards/bot-detail.jso
 echo "==> telemetry contract docs"
 grep -q 'severityText' docs/telemetry-contract.md
 grep -q 'severity_text' docs/telemetry-contract.md
+grep -q '| `bot_updates_total`' docs/telemetry-contract.md
+grep -q '| `bot_errors_total`' docs/telemetry-contract.md
+grep -q '| `bot_handler_duration_seconds`' docs/telemetry-contract.md
+grep -q '| `bot_up`' docs/telemetry-contract.md
 
 echo "==> dashboard JSON + log panels"
 python3 -c 'import json,sys; [json.load(open(p)) for p in sys.argv[1:]]' \

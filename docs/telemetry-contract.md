@@ -1,7 +1,7 @@
 # Telemetry contract (bots and services)
 
 Shared scheme for all CreaRec apps that send OpenTelemetry to CreaGrafana Alloy.
-Follow this so one Grafana dashboard and one set of Explore queries work across bots.
+Follow this so fleet / detail dashboards and Explore queries work across bots.
 
 Apps talk **only** to Alloy (OTLP). Do not send to Loki, Tempo, or Mimir directly.
 See [examples/README.md](../examples/README.md) for endpoints and Docker network `lgtm`.
@@ -30,12 +30,8 @@ OTEL_SERVICE_NAMESPACE=bots
 **Allowed on metrics (low cardinality):**
 
 - `result`: `success` | `error` | `skipped`
-- `command`: `/start`, `/files`, `/usage`, … (finite set)
 - `handler`: short enum (`download`, `files`, `restart`, …)
-- `job`: short enum (`download`, `classify`, `send`, …)
 - `error_type`: short enum (`timeout`, `telegram`, `openai`, `fs`, `unknown`, …)
-- `media_kind`: `video` | `document` | `other` (if relevant)
-- `update_kind`: `message` | `callback` | `command` | … (finite set)
 
 **Never use as metric labels** (put in span attributes or log body instead):
 
@@ -44,39 +40,26 @@ OTEL_SERVICE_NAMESPACE=bots
 - Free-text error messages
 - Request/trace ids as labels (use trace context, not series)
 
-Metric names: `snake_case`, Prometheus-style suffixes (`_total`, `_seconds`, `_bytes`).
+Metric names: `snake_case`, Prometheus-style suffixes (`_total`, `_seconds`).
 
 ## Required metrics (all bots)
 
-Prefix `bot_` so fleet dashboards can use one query.
+Prefix `bot_` so fleet dashboards can use one query. These are what **Bots fleet** / **Bot detail** query — emit all of them.
 
 | Metric | Type | Labels | Meaning |
 |--------|------|--------|---------|
-| `bot_updates_total` | counter | `result`, optional `update_kind` | Inbound Telegram updates handled |
-| `bot_commands_total` | counter | `command`, `result` | Slash commands |
-| `bot_handler_duration_seconds` | histogram | `handler`, `result` | Handler latency |
-| `bot_errors_total` | counter | `error_type`, `handler` | Explicit application errors |
-| `bot_inflight` | gauge | optional `handler` | In-progress handlers/jobs |
-
-### Job metrics (bots that do work: download, classify, generate, …)
-
-| Metric | Type | Labels | Meaning |
-|--------|------|--------|---------|
-| `bot_jobs_total` | counter | `job`, `result` | Job attempts |
-| `bot_job_duration_seconds` | histogram | `job`, `result` | Job latency |
-| `bot_job_bytes_total` | counter | `job`, `direction` (`in`\|`out`) | Bytes transferred (no path labels) |
-
-Optional: `bot_up` gauge `1` while process is healthy (if you do not rely on container health alone).
+| `bot_updates_total` | counter | `result` | Inbound Telegram updates handled |
+| `bot_handler_duration_seconds` | histogram | optional `handler`, `result` | Handler latency |
+| `bot_errors_total` | counter | optional `error_type`, `handler` | Explicit application errors |
+| `bot_up` | gauge | — | `1` while the process is healthy |
 
 ## Traces (recommended names)
 
 | Span name | When |
 |-----------|------|
 | `bot.handle_update` | Root span per Telegram update |
-| `bot.command` | Slash command handling |
-| `bot.job.<name>` | e.g. `bot.job.download`, `bot.job.classify` |
 
-Span **attributes** (OK to be higher detail than metric labels): `result`, `error.type`, sizes, media kind. Still avoid putting raw PII in attributes if logs are retained long-term.
+Span **attributes** (OK to be higher detail than metric labels): `result`, `error.type`, sizes. Still avoid putting raw PII in attributes if logs are retained long-term.
 
 On failure: `span.recordException(err)` and set span status to error.
 
@@ -121,11 +104,15 @@ After deploy, Explore (time range last 15m):
 ```
 
 ```promql
-sum by (service_name) (rate(bot_jobs_total[5m]))
+sum by (service_name) (rate(bot_updates_total[5m]))
 ```
 
 ```promql
-sum by (service_name, result) (rate(bot_errors_total[5m]))
+sum by (service_name) (rate(bot_errors_total[5m]))
+```
+
+```promql
+max by (service_name) (bot_up)
 ```
 
 Tempo: search `service.name = crea-video-downloader` (or your bot’s `service.name`).
@@ -142,9 +129,9 @@ sum by (service_name) (rate(bot_updates_total{service_namespace="bots"}[5m]))
 
 - Point OTLP at Loki/Tempo/Mimir URLs
 - Block business logic if export fails (warn and continue)
-- Invent parallel metric names for the same idea (`downloads_total` vs `bot_jobs_total{job="download"}` — prefer the contract)
+- Invent parallel metric names for the same idea (`requests_total` vs `bot_updates_total` — prefer the contract)
 
 ## Versioning this contract
 
 Breaking renames of required metrics need a short note here and a dashboard update.
-Additive metrics and new `job` / `handler` enum values are fine without a version bump.
+Additive optional labels on required metrics are fine without a version bump.

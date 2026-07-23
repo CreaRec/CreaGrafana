@@ -20,7 +20,7 @@ export OTEL_SERVICE_NAMESPACE=bots
 
 Use stable `service.name` / `service.namespace` values. Filter by them in Grafana Explore and dashboards. Avoid high-cardinality labels (raw URLs, user IDs, message IDs).
 
-**Metric and span names for bots:** follow the shared scheme in [docs/telemetry-contract.md](../docs/telemetry-contract.md) (`bot_updates_total`, `bot_jobs_total`, …).
+**Metric and span names for bots:** follow the shared scheme in [docs/telemetry-contract.md](../docs/telemetry-contract.md) (`bot_updates_total`, `bot_errors_total`, `bot_handler_duration_seconds`, `bot_up`, …).
 
 ## Local smoke test (optional)
 

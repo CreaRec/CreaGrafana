@@ -49,7 +49,7 @@ otelcol.processor.transform "resource_labels" {
     context = "datapoint"
 
     // Use final Prometheus label names (underscores). Setting service.name as a
-    // datapoint attr can be special-cased into job and collide with bot_jobs_total{job=...}.
+    // datapoint attr can be special-cased into the scrape job label.
     statements = [
       `set(attributes["service_name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil`,
       `set(attributes["service_namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil`,
