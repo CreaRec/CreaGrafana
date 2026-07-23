@@ -149,12 +149,12 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "sum((increase(bot_updates_total{service_name=~\"$service\", deployment_environment=~\"$env\", result=\"error\"}[$__range]) or increase(bot_updates_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\", result=\"error\"}[$__range])))",
-          "legendFormat": "error",
+          "expr": "sum((increase(bot_errors_total{service_name=~\"$service\", deployment_environment=~\"$env\"}[$__range]) or increase(bot_errors_total{job=~\"($namespace/)?$service\", deployment_environment=~\"$env\"}[$__range])))",
+          "legendFormat": "errors",
           "refId": "A"
         }
       ],
-      "title": "Failed requests",
+      "title": "Errors",
       "type": "stat"
     },
     {

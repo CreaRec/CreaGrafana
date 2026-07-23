@@ -28,6 +28,8 @@ grep -qE 'add_metric_suffixes[[:space:]]*=[[:space:]]*false' config/alloy/config
 
 echo "==> dashboard contracts"
 grep -q 'label_values(bot_updates_total, job)' config/grafana/dashboards/bot-detail.json
+grep -q 'bot_errors_total' config/grafana/dashboards/bots-fleet.json
+grep -q 'bot_errors_total' config/grafana/dashboards/bot-detail.json
 grep -q 'severity_text=~\\"(?i)error|fatal\\"' config/grafana/dashboards/bots-fleet.json
 grep -q 'severity_text=~\\"(?i)warn\\"' config/grafana/dashboards/bots-fleet.json
 grep -q 'severity_text=~\\"(?i)error|fatal\\"' config/grafana/dashboards/bot-detail.json
