@@ -53,6 +53,38 @@ Prefix `bot_` so fleet dashboards can use one query. These are what **Bots fleet
 | `bot_errors_total` | counter | optional `error_type`, `handler` | Explicit application errors |
 | `bot_up` | gauge | — | `1` while the process is healthy |
 
+### Emit counter and histogram together
+
+Fleet / Bot detail **Successful requests** and **Request rate** come from `bot_updates_total`. **Latency (p50/p95)** comes from `bot_handler_duration_seconds`. They are independent series in Mimir.
+
+**On every handled update (success, error, or skipped), in the same code path:**
+
+1. Record `bot_handler_duration_seconds` (unit: **seconds**, not milliseconds).
+2. Increment `bot_updates_total` with the same `result` (`success` | `error` | `skipped`).
+3. On application failure, also increment `bot_errors_total` when appropriate.
+
+Do **not** record the histogram alone. That makes latency panels look live while Successful requests / rate stay at `0` — a real failure mode we hit when only duration was instrumented.
+
+Keep one series family for `bot_updates_total`: required label is `result` only. Optional low-cardinality labels (`handler`) are fine; avoid emitting a second parallel counter series that differs only by an extra label (e.g. sometimes with `update_kind`, sometimes without) — dashboards `sum`/`increase` then become hard to reason about.
+
+Histogram bucket boundaries must match **seconds** (e.g. `0.005` … `10`), not millisecond integers (`5`, `100`, `2500`, …). Wrong units make p50/p95 look like multi-second values when the handler was actually milliseconds (or the reverse).
+
+### How to verify after a fix
+
+In Explore (Mimir), same time range, after traffic:
+
+```promql
+increase(bot_updates_total{job=~".*crea-trip-planner.*", result="success"}[15m])
+```
+
+```promql
+increase(bot_handler_duration_seconds_count{job=~".*crea-trip-planner.*"}[15m])
+```
+
+Both must move together (same order of magnitude of events). If `_count` grows and `bot_updates_total` stays flat, the counter is still missing on that path.
+
+Label note: until Alloy copies resource attrs onto datapoints, series may appear under `job="bots/<service.name>"` without `service_name`. Prefer still setting resource attrs; dashboards have a `job` fallback. After Alloy `resource_labels`, filter on `service_name` / `deployment_environment` as in the tables above.
+
 ## Traces (recommended names)
 
 | Span name | When |
@@ -130,6 +162,8 @@ sum by (service_name) (rate(bot_updates_total{service_namespace="bots"}[5m]))
 - Point OTLP at Loki/Tempo/Mimir URLs
 - Block business logic if export fails (warn and continue)
 - Invent parallel metric names for the same idea (`requests_total` vs `bot_updates_total` — prefer the contract)
+- Record `bot_handler_duration_seconds` without incrementing `bot_updates_total` on the same handle
+- Observe the histogram in milliseconds while the metric name/unit is `_seconds`
 
 ## Versioning this contract
 
