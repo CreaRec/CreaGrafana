@@ -25,6 +25,15 @@ jobs:
           grep -qE 'add_metric_suffixes[[:space:]]*=[[:space:]]*false' config/alloy/config.alloy
           ! grep -q 'resource_to_telemetry_conversion = true' config/alloy/config.alloy
           grep -q 'label_values(bot_updates_total, job)' config/grafana/dashboards/bot-detail.json
+          grep -q 'severity_text=~\\"(?i)error|fatal\\"' config/grafana/dashboards/bots-fleet.json
+          grep -q 'severity_text=~\\"(?i)warn\\"' config/grafana/dashboards/bots-fleet.json
+          grep -q 'severity_text=~\\"(?i)error|fatal\\"' config/grafana/dashboards/bot-detail.json
+          grep -q 'severity_text=~\\"(?i)warn\\"' config/grafana/dashboards/bot-detail.json
+          ! grep -q 'error|exception|fail' \
+            config/grafana/dashboards/bots-fleet.json \
+            config/grafana/dashboards/bot-detail.json
+          grep -q 'severityText' docs/telemetry-contract.md
+          grep -q 'severity_text' docs/telemetry-contract.md
           test -f config/loki/loki.yaml
           test -f config/tempo/tempo.yaml
           test -f config/mimir/mimir.yaml
@@ -36,6 +45,15 @@ jobs:
           python3 -c 'import json,sys; [json.load(open(p)) for p in sys.argv[1:]]' \
             config/grafana/dashboards/bots-fleet.json \
             config/grafana/dashboards/bot-detail.json
+          python3 -c '
+import json
+for p in (
+  "config/grafana/dashboards/bots-fleet.json",
+  "config/grafana/dashboards/bot-detail.json",
+):
+  titles = {panel["title"] for panel in json.load(open(p))["panels"]}
+  assert "Error logs" in titles and "Warning logs" in titles, p
+'
           test -f config/listen-ports/export.sh
           sh -n config/listen-ports/export.sh
           test -f .env.example

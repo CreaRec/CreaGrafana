@@ -85,9 +85,28 @@ Propagate `trace_id` into logs so Loki ↔ Tempo links work.
 ## Logs
 
 - Keep existing console logging if you have it.
-- Also emit OTEL logs (or ensure log lines include `trace_id=`).
-- Prefer structured fields: `handler`, `result`, `error_type`.
-- Do not turn high-cardinality fields into Loki **stream labels**; keep streams based on `service_name` / `service_namespace` / level-like fields.
+- Also emit **OTEL logs** (Loki native OTLP via Alloy). Console-only lines without OTEL severity will not appear in Error / Warning dashboard panels.
+- Set OTEL `severityText` (and preferably `severityNumber`) on every log record. Required values (case-insensitive; prefer uppercase):
+
+  | `severityText` | Use for |
+  |----------------|---------|
+  | `DEBUG` / `INFO` | Normal operation |
+  | `WARN` | Recoverable / degraded (also accept `WARNING`) |
+  | `ERROR` | Failures that need attention (also accept `FATAL`) |
+
+- Prefer structured attributes: `handler`, `result`, `error_type`. Propagate `trace_id` so Loki ↔ Tempo links work.
+- Do **not** rely on wording in the log body (`"error"`, `"fail"`, …) for severity — dashboards filter on `severity_text`, not text heuristics.
+- Do not turn high-cardinality fields into Loki **stream labels**; keep streams based on `service_name` / `service_namespace`. Severity stays structured metadata (`severity_text`) from OTLP — fine to filter in LogQL, do not promote free-text messages to labels.
+
+Fleet / detail dashboards:
+
+```logql
+{service_namespace="bots", service_name=~".+"} | severity_text=~"(?i)error|fatal"
+```
+
+```logql
+{service_namespace="bots", service_name=~".+"} | severity_text=~"(?i)warn"
+```
 
 ## Grafana checks
 
@@ -95,6 +114,10 @@ After deploy, Explore (time range last 15m):
 
 ```logql
 {service_name="crea-video-downloader"}
+```
+
+```logql
+{service_name="crea-video-downloader"} | severity_text=~"(?i)error|fatal"
 ```
 
 ```promql

@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Simple fleet view: success/error rates, latency, health, logs.",
+  "description": "Fleet view: success/error rates, latency, health, severity-filtered logs.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -304,12 +304,48 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{service_namespace=\"$namespace\", service_name=~\"$service\"} |~ \"(?i)error|exception|fail\"",
+          "expr": "{service_namespace=\"$namespace\", service_name=~\"$service\"} | severity_text=~\"(?i)error|fatal\"",
           "queryType": "range",
           "refId": "A"
         }
       ],
       "title": "Error logs",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 7,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{service_namespace=\"$namespace\", service_name=~\"$service\"} | severity_text=~\"(?i)warn\"",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Warning logs",
       "type": "logs"
     }
   ],
