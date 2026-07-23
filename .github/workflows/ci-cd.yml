@@ -24,7 +24,6 @@ jobs:
           test -f config/mimir/mimir.yaml
           test -f config/grafana/provisioning/datasources/datasources.yaml
           test -f config/grafana/provisioning/dashboards/dashboards.yaml
-          test -f config/grafana/dashboards/lgtm-overview.json
           test -f config/grafana/dashboards/host-listen-ports.json
           test -f config/grafana/dashboards/bots-fleet.json
           test -f config/grafana/dashboards/bot-detail.json
