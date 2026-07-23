@@ -20,9 +20,11 @@ jobs:
           test -f docker-compose.yml
           test -f config/alloy/config.alloy
           grep -q 'otelcol.processor.transform "resource_labels"' config/alloy/config.alloy
+          grep -q 'attributes\["service_name"\]' config/alloy/config.alloy
           grep -q 'deployment.environment.name' config/alloy/config.alloy
           grep -qE 'add_metric_suffixes[[:space:]]*=[[:space:]]*false' config/alloy/config.alloy
           ! grep -q 'resource_to_telemetry_conversion = true' config/alloy/config.alloy
+          grep -q 'label_values(bot_updates_total, job)' config/grafana/dashboards/bot-detail.json
           test -f config/loki/loki.yaml
           test -f config/tempo/tempo.yaml
           test -f config/mimir/mimir.yaml

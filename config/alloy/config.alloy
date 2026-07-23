@@ -48,11 +48,13 @@ otelcol.processor.transform "resource_labels" {
   metric_statements {
     context = "datapoint"
 
+    // Use final Prometheus label names (underscores). Setting service.name as a
+    // datapoint attr can be special-cased into job and collide with bot_jobs_total{job=...}.
     statements = [
-      `set(attributes["service.name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil`,
-      `set(attributes["service.namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil`,
-      `set(attributes["deployment.environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment.name"] != nil`,
-      `set(attributes["deployment.environment"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment"] != nil`,
+      `set(attributes["service_name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil`,
+      `set(attributes["service_namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil`,
+      `set(attributes["deployment_environment"], resource.attributes["deployment.environment.name"]) where resource.attributes["deployment.environment.name"] != nil`,
+      `set(attributes["deployment_environment"], resource.attributes["deployment.environment"]) where resource.attributes["deployment.environment"] != nil`,
     ]
   }
 
