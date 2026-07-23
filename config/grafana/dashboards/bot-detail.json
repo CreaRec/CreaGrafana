@@ -758,7 +758,7 @@
         "type": "custom"
       },
       {
-        "allValue": ".+",
+        "allValue": ".*",
         "current": {
           "selected": true,
           "text": "crea-video-downloader",

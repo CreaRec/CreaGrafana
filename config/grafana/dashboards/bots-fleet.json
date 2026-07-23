@@ -470,7 +470,7 @@
         "type": "query"
       },
       {
-        "allValue": ".+",
+        "allValue": ".*",
         "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": { "type": "prometheus", "uid": "mimir" },
         "definition": "label_values(bot_updates_total{service_namespace=\"$namespace\"}, service_name)",
