@@ -76,7 +76,7 @@ pid_container_id() {
     -e 's/.*docker[/-]\([0-9a-f]\{64\}\).*/\1/p' \
     -e 's/.*cri-containerd-\([0-9a-f]\{64\}\).*/\1/p' \
     -e 's/.*\/\([0-9a-f]\{64\}\)$/\1/p' \
-    | head -n 1
+    | awk 'NR==1 { print; exit }'
 }
 
 resolve_docker() {
@@ -122,26 +122,30 @@ write_metrics() {
   build_docker_maps "${map_dir}"
   # Use -tulpn so Netid is present (Alpine/Debian ss -tlnp often omits it). Keep TCP LISTEN only.
   ss -H -tulpn 2>/dev/null >"${ss_out}" || true
+  ss_lines="$(wc -l <"${ss_out}" | tr -d ' ')"
 
+  # Do not abort the whole scrape on a single bad line
+  set +e
   while IFS= read -r line || [ -n "${line}" ]; do
     [ -z "${line}" ] && continue
 
     netid="$(printf '%s\n' "${line}" | awk '{print $1}')"
     state="$(printf '%s\n' "${line}" | awk '{print $2}')"
-    local="$(printf '%s\n' "${line}" | awk '{print $5}')"
+    # Avoid variable name `local` (shell builtin in some shells)
+    laddr="$(printf '%s\n' "${line}" | awk '{print $5}')"
 
     [ "${netid}" = "tcp" ] || continue
     [ "${state}" = "LISTEN" ] || continue
 
     # Split Local Address:Port (IPv6 is [addr]:port)
-    case "${local}" in
+    case "${laddr}" in
       \[*\]*)
-        addr="$(printf '%s\n' "${local}" | sed 's/^\[\([^]]*\)\]:.*/\1/')"
-        port="$(printf '%s\n' "${local}" | sed 's/^\[.*\]://')"
+        addr="$(printf '%s\n' "${laddr}" | sed 's/^\[\([^]]*\)\]:.*/\1/')"
+        port="$(printf '%s\n' "${laddr}" | sed 's/^\[.*\]://')"
         ;;
       *)
-        addr="${local%:*}"
-        port="${local##*:}"
+        addr="${laddr%:*}"
+        port="${laddr##*:}"
         ;;
     esac
 
@@ -155,16 +159,20 @@ write_metrics() {
     if [ -z "${process}" ]; then
       process="unknown"
     fi
-    # Avoid `head` in a pipe under set -e (SIGPIPE can abort the scrape)
     pid="$(printf '%s\n' "${line}" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | awk 'NR==1 { print; exit }')"
 
     docker_row="$(resolve_docker "${map_dir}" "${pid}" "${port}")"
     container_name="$(printf '%s\n' "${docker_row}" | awk -F '\t' '{print $1}')"
     compose_service="$(printf '%s\n' "${docker_row}" | awk -F '\t' '{print $2}')"
+    [ -n "${container_name}" ] || container_name="-"
+    [ -n "${compose_service}" ] || compose_service="-"
 
     printf '%s\t%s\t%s\t%s\t%s\n' \
       "${addr}" "${port}" "${process}" "${container_name}" "${compose_service}"
   done <"${ss_out}" >"${rows}"
+  set -e
+
+  row_lines="$(wc -l <"${rows}" | tr -d ' ')"
 
   # ss often lists the same listen twice (with and without users:(...)); keep one row per
   # addr|port, preferring a resolved process / docker labels over unknowns.
@@ -199,6 +207,10 @@ write_metrics() {
       }
     }
   ' "${rows}" >"${body}"
+
+  sample_lines="$(grep -c '^host_socket_listen{' "${body}" 2>/dev/null || true)"
+  [ -n "${sample_lines}" ] || sample_lines=0
+  echo "listen-ports scrape: ss_lines=${ss_lines} tcp_rows=${row_lines} samples=${sample_lines}"
 
   {
     printf '%s\n' '# HELP host_socket_listen Host TCP LISTEN sockets (from ss -tulpn); for finding free ports.'

@@ -25,6 +25,16 @@ docker compose up -d
 Sidecar `listen-ports` runs `ss -tulpn` every 15s (TCP LISTEN only — for picking free ports) into `data/listen-ports/` (Prometheus textfile). Alloy scrapes that file into Mimir. Dashboard: **CreaGrafana → Host listen ports**.
 
 ```sh
+docker compose up -d --force-recreate listen-ports
+docker compose logs --tail=20 listen-ports
+# Expect: listen-ports scrape: ss_lines=N tcp_rows=M samples=M
+sudo grep '^host_socket_listen{' data/listen-ports/listen_ports.prom | head -1
+# HELP line must say "ss -tulpn" (not tlnp) — otherwise the old process is still running
+```
+
+`export.sh` is bind-mounted; a normal `compose up -d` does **not** reload it — use `--force-recreate listen-ports` after script changes.
+
+```sh
 docker compose ps listen-ports alloy
 docker compose logs --tail=50 listen-ports
 ls -la data/listen-ports/

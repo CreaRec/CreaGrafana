@@ -86,6 +86,8 @@ jobs:
           docker network create lgtm 2>/dev/null || true
           docker compose pull
           docker compose up -d
+          # export.sh is bind-mounted; content changes do not recreate the container by themselves
+          docker compose up -d --force-recreate listen-ports
           docker compose ps
           docker compose logs --tail=40
           EOF
