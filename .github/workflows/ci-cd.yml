@@ -26,6 +26,11 @@ jobs:
           test -f config/grafana/provisioning/dashboards/dashboards.yaml
           test -f config/grafana/dashboards/lgtm-overview.json
           test -f config/grafana/dashboards/host-listen-ports.json
+          test -f config/grafana/dashboards/bots-fleet.json
+          test -f config/grafana/dashboards/bot-detail.json
+          python3 -c 'import json,sys; [json.load(open(p)) for p in sys.argv[1:]]' \
+            config/grafana/dashboards/bots-fleet.json \
+            config/grafana/dashboards/bot-detail.json
           test -f config/listen-ports/export.sh
           sh -n config/listen-ports/export.sh
           test -f .env.example
