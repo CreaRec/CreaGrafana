@@ -63,6 +63,13 @@ for p in (
   assert "Error logs" in titles and "Warning logs" in titles, p
 PY
 
+echo "==> crea-otel package contract"
+test -f packages/crea-otel/package.json
+grep -q '"name": "@crearec/otel"' packages/crea-otel/package.json
+grep -q 'bot_updates_total' packages/crea-otel/README.md
+grep -q 'bot_handler_duration_seconds' packages/crea-otel/README.md
+grep -q 'recordHandledUpdate' packages/crea-otel/README.md
+
 echo "==> listen-ports script syntax"
 sh -n config/listen-ports/export.sh
 

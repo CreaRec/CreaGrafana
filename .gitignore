@@ -4,3 +4,7 @@ data/**
 *.log
 .DS_Store
 examples/node-otel/node_modules/
+examples/node-otel-bot/node_modules/
+packages/crea-otel/node_modules/
+packages/crea-otel/dist/
+packages/crea-otel/*.tgz

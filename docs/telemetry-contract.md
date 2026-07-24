@@ -6,6 +6,8 @@ Follow this so fleet / detail dashboards and Explore queries work across bots.
 Apps talk **only** to Alloy (OTLP). Do not send to Loki, Tempo, or Mimir directly.
 See [examples/README.md](../examples/README.md) for endpoints and Docker network `lgtm`.
 
+For Node/TypeScript apps and bots, prefer [`@crearec/otel`](../packages/crea-otel) (`initTelemetry` with `kind: "app"` or `kind: "bot"`). The bot helpers emit `bot_updates_total` and `bot_handler_duration_seconds` together so fleet dashboards stay consistent.
+
 ## Resource attributes (required)
 
 Set on the OTEL `Resource` (or via env where supported):
