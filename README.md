@@ -9,7 +9,7 @@ Apps send OpenTelemetry to Alloy. Grafana is private (Tailscale bind in producti
 Production is the Debian host shared with your bots. Grafana binds to your Tailscale IP only. Do not rely on a local Mac stack for “prod.”
 
 1. One-time server bootstrap — [docs/docker.md](docs/docker.md)
-2. Push to `main` — Actions runs `test` (`./scripts/test.sh`) then deploys compose + `config/`
+2. Push to `main` — Actions runs `test` + `@crearec/otel` package checks; deploys compose + `config/` only when those paths change
 3. Open Grafana at `http://<GRAFANA_BIND>:3000` over Tailscale
 4. Smoke-test OTLP with [examples/node-otel](examples/node-otel) (or [node-otel-bot](examples/node-otel-bot)) pointed at the server Alloy endpoint (or from another host on Tailscale / the server itself)
 
