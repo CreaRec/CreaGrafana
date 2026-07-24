@@ -65,7 +65,12 @@ PY
 
 echo "==> crea-otel package contract"
 test -f packages/crea-otel/package.json
+test -f .github/workflows/publish-otel.yml
 grep -q '"name": "@crearec/otel"' packages/crea-otel/package.json
+grep -q '"registry": "https://npm.pkg.github.com"' packages/crea-otel/package.json
+grep -q "packages: write" .github/workflows/publish-otel.yml
+grep -q "otel-v" .github/workflows/publish-otel.yml
+grep -q "npm publish" .github/workflows/publish-otel.yml
 grep -q 'bot_updates_total' packages/crea-otel/README.md
 grep -q 'bot_handler_duration_seconds' packages/crea-otel/README.md
 grep -q 'recordHandledUpdate' packages/crea-otel/README.md

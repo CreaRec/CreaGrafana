@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "description": "OpenTelemetry bootstrap and bot helpers for CreaGrafana (OTLP → Alloy)",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CreaRec/CreaGrafana.git",
+    "directory": "packages/crea-otel"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "engines": {
     "node": ">=20"
   },

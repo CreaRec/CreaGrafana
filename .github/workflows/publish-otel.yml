@@ -1,0 +1,50 @@
+name: Publish @crearec/otel
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    if: startsWith(github.event.release.tag_name, 'otel-v')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/crea-otel
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: packages/crea-otel/package-lock.json
+          registry-url: https://npm.pkg.github.com
+          scope: "@crearec"
+
+      - name: Install, test, and build
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Verify release tag matches package version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          test "$RELEASE_TAG" = "otel-v$PACKAGE_VERSION" || {
+            echo "Release tag $RELEASE_TAG must equal otel-v$PACKAGE_VERSION" >&2
+            exit 1
+          }
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

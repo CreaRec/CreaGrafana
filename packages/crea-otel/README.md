@@ -3,32 +3,44 @@
 Thin OpenTelemetry bootstrap for CreaRec apps talking to CreaGrafana Alloy (OTLP).
 Implements the bot fleet metrics from [docs/telemetry-contract.md](../../docs/telemetry-contract.md).
 
-## Install (this repo)
+## Install from GitHub Packages
 
-Not published to npm yet. From another package in a checkout:
+Configure npm with a GitHub token that has `read:packages` access:
+
+```ini
+@crearec:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+Then install the package:
 
 ```sh
-cd packages/crea-otel && npm install && npm run build
+npm install @crearec/otel
 ```
 
-Consume from an example / bot via local path:
+GitHub Actions can use its repository `GITHUB_TOKEN`. Local installs need a
+personal access token (classic) with `read:packages`; private repository access
+may also be required.
 
-```json
-{
-  "dependencies": {
-    "@crearec/otel": "file:../../packages/crea-otel"
-  }
-}
-```
+## Release
 
-Or pack once:
+1. Update the version in `package.json` and `package-lock.json`, for example:
 
 ```sh
-cd packages/crea-otel && npm pack
-# install the resulting .tgz in the bot
+cd packages/crea-otel
+npm version 0.2.0 --no-git-tag-version
 ```
 
-npm registry / GitHub Packages publish is a follow-up.
+2. Commit and push the version change.
+3. Create a GitHub Release with the matching tag, for example
+   `otel-v0.2.0`.
+
+Publishing the release runs the package tests and publishes to GitHub Packages.
+The workflow's built-in `GITHUB_TOKEN` supplies `packages: write`; no separate
+publishing token is needed.
+
+For development in this repository, examples can continue using the local
+dependency `"@crearec/otel": "file:../../packages/crea-otel"`.
 
 ## Config
 
