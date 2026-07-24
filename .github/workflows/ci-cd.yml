@@ -45,11 +45,14 @@ jobs:
           cache: npm
           cache-dependency-path: packages/crea-otel/package-lock.json
 
-      - name: Install, test, build
-        run: |
-          npm ci
-          npm test
-          npm run build
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
 
   deploy:
     runs-on: ubuntu-latest
