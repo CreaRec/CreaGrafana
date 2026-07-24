@@ -1,6 +1,6 @@
 {
   "name": "@crearec/otel",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "OpenTelemetry bootstrap and bot helpers for CreaGrafana (OTLP → Alloy)",
   "license": "UNLICENSED",
   "repository": {
