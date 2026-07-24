@@ -34,8 +34,6 @@ jobs:
   otel-package:
     runs-on: ubuntu-latest
     needs: [changes, test]
-    outputs:
-      infra: ${{ needs.changes.outputs.infra }}
     defaults:
       run:
         working-directory: packages/crea-otel
@@ -59,11 +57,11 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: otel-package
+    needs: [changes, test]
     if: >
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
-      needs['otel-package'].outputs.infra == 'true'
+      needs.changes.outputs.infra == 'true'
     steps:
       - uses: actions/checkout@v4
 
