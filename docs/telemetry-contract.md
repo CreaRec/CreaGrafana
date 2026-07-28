@@ -46,7 +46,7 @@ Metric names: `snake_case`, Prometheus-style suffixes (`_total`, `_seconds`).
 
 ## Required metrics (all bots)
 
-Prefix `bot_` so fleet dashboards can use one query. These are what **Bots fleet** / **Bot detail** query — emit all of them.
+Prefix `bot_` so fleet dashboards can use one query. These are what **Services fleet** / **Service detail** query for bots — emit all of them. Host apps (e.g. phone agent under `service.namespace=apps`) use app-specific metrics (`phone_unlocks_total`, `phone_unlock_duration_seconds`, `phone_errors_total`); the same dashboards OR those with `bot_*` by selected namespace/service.
 
 | Metric | Type | Labels | Meaning |
 |--------|------|--------|---------|
@@ -57,7 +57,7 @@ Prefix `bot_` so fleet dashboards can use one query. These are what **Bots fleet
 
 ### Emit counter and histogram together
 
-Fleet / Bot detail **Successful requests** and **Request rate** come from `bot_updates_total`. **Latency (p50/p95)** comes from `bot_handler_duration_seconds`. They are independent series in Mimir.
+Services fleet / Service detail **Successful requests** and **Request rate** for bots come from `bot_updates_total`. **Latency (p50/p95)** comes from `bot_handler_duration_seconds`. They are independent series in Mimir.
 
 **On every handled update (success, error, or skipped), in the same code path:**
 
