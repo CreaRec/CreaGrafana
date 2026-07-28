@@ -29,6 +29,9 @@ grep -q 'deployment.environment.name' config/alloy/config.alloy
 grep -qE 'add_metric_suffixes[[:space:]]*=[[:space:]]*false' config/alloy/config.alloy
 ! grep -q 'resource_to_telemetry_conversion = true' config/alloy/config.alloy
 
+echo "==> dashboard provisioning"
+grep -qE 'allowUiUpdates:[[:space:]]*false' config/grafana/provisioning/dashboards/dashboards.yaml
+
 echo "==> dashboard contracts"
 grep -q 'label_values(service_namespace)' config/grafana/dashboards/services-fleet.json
 grep -q 'label_values(service_namespace)' config/grafana/dashboards/service-detail.json

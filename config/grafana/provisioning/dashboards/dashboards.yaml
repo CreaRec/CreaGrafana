@@ -5,9 +5,12 @@ providers:
     orgId: 1
     folder: CreaGrafana
     type: file
+    # File provisioned dashboards cannot be deleted in the UI — remove/rename the
+    # JSON under config/grafana/dashboards/ and redeploy (or restart Grafana).
+    # allowUiUpdates: false so git wins over a stale DB title/tags (e.g. "Bot detail").
     disableDeletion: false
     updateIntervalSeconds: 30
-    allowUiUpdates: true
+    allowUiUpdates: false
     options:
       path: /var/lib/grafana/dashboards
       foldersFromFilesStructure: false
