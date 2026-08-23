@@ -77,4 +77,16 @@ describe("resolveConfig", () => {
     assert.equal(resolved.endpoint, "http://127.0.0.1:4318");
     assert.equal(resolved.metricExportIntervalMillis, 5000);
   });
+
+  it("accepts kind mcp", () => {
+    const resolved = resolveConfig({
+      serviceName: "apple-calendar",
+      serviceNamespace: "mcp",
+      kind: "mcp",
+    });
+
+    assert.equal(resolved.serviceName, "apple-calendar");
+    assert.equal(resolved.serviceNamespace, "mcp");
+    assert.equal(resolved.kind, "mcp");
+  });
 });

@@ -17,13 +17,14 @@ import {
 } from "@opentelemetry/semantic-conventions";
 import { createBotTelemetry, type BotTelemetry } from "./bot";
 import { resolveConfig } from "./config";
+import { createMcpTelemetry, type McpTelemetry } from "./mcp";
 import type { TelemetryConfig } from "./types";
 
 const ATTR_SERVICE_NAMESPACE = "service.namespace";
 const ATTR_DEPLOYMENT_ENVIRONMENT = "deployment.environment";
 
 export type TelemetryHandle = {
-  kind: "app" | "bot";
+  kind: "app" | "bot" | "mcp";
   serviceName: string;
   serviceNamespace: string;
   tracer: Tracer;
@@ -31,6 +32,8 @@ export type TelemetryHandle = {
   logger: Logger;
   /** Present when `kind: "bot"`. */
   bot?: BotTelemetry;
+  /** Present when `kind: "mcp"`. */
+  mcp?: McpTelemetry;
   shutdown(): Promise<void>;
 };
 
@@ -39,13 +42,23 @@ export type BotTelemetryHandle = TelemetryHandle & {
   bot: BotTelemetry;
 };
 
+export type McpTelemetryHandle = TelemetryHandle & {
+  kind: "mcp";
+  mcp: McpTelemetry;
+};
+
 function isBotHandle(tel: TelemetryHandle): tel is BotTelemetryHandle {
   return tel.kind === "bot" && tel.bot !== undefined;
+}
+
+function isMcpHandle(tel: TelemetryHandle): tel is McpTelemetryHandle {
+  return tel.kind === "mcp" && tel.mcp !== undefined;
 }
 
 /**
  * Bootstrap OTLP exporters to Alloy and return tracer/meter/logger.
  * Pass `kind: "bot"` for fleet-contract helpers on `tel.bot`.
+ * Pass `kind: "mcp"` for fleet-contract helpers on `tel.mcp`.
  */
 export function initTelemetry(config: TelemetryConfig = {}): TelemetryHandle {
   const resolved = resolveConfig(config);
@@ -116,9 +129,11 @@ export function initTelemetry(config: TelemetryConfig = {}): TelemetryHandle {
 
   if (resolved.kind === "bot") {
     handle.bot = createBotTelemetry(meter);
+  } else if (resolved.kind === "mcp") {
+    handle.mcp = createMcpTelemetry(meter);
   }
 
   return handle;
 }
 
-export { isBotHandle };
+export { isBotHandle, isMcpHandle };

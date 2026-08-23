@@ -1,9 +1,11 @@
-export type TelemetryKind = "app" | "bot";
+export type TelemetryKind = "app" | "bot" | "mcp";
 
 export type BotResult = "success" | "error" | "skipped";
 
+export type McpResult = "success" | "error" | "skipped";
+
 export type TelemetryConfig = {
-  /** Defaults to `app`. Use `bot` to enable fleet-contract helpers. */
+  /** Defaults to `app`. Use `bot` or `mcp` to enable fleet-contract helpers. */
   kind?: TelemetryKind;
   /** Overrides `OTEL_SERVICE_NAME`. Required (arg or env). */
   serviceName?: string;
@@ -40,4 +42,17 @@ export type RecordHandledUpdateInput = {
 export type RecordErrorInput = {
   errorType: string;
   handler?: string;
+};
+
+export type RecordToolCallInput = {
+  result: McpResult;
+  /** Tool latency in seconds (not milliseconds). */
+  durationSeconds: number;
+  /** Low-cardinality tool name, e.g. `calendar_list`. */
+  tool?: string;
+};
+
+export type RecordMcpErrorInput = {
+  errorType: string;
+  tool?: string;
 };

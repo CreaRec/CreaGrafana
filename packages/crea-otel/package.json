@@ -1,7 +1,7 @@
 {
   "name": "@crearec/otel",
-  "version": "0.0.2",
-  "description": "OpenTelemetry bootstrap and bot helpers for CreaGrafana (OTLP → Alloy)",
+  "version": "0.0.3",
+  "description": "OpenTelemetry bootstrap and bot/MCP helpers for CreaGrafana (OTLP → Alloy)",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -29,7 +29,7 @@
   ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
-    "test": "rm -rf dist && tsc -p tsconfig.json && node --test dist/config.test.js dist/bot.test.js",
+    "test": "rm -rf dist && tsc -p tsconfig.json && node --test dist/config.test.js dist/bot.test.js dist/mcp.test.js",
     "prepack": "npm run build"
   },
   "dependencies": {
