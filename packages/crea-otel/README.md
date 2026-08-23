@@ -1,7 +1,7 @@
 # `@crearec/otel`
 
 Thin OpenTelemetry bootstrap for CreaRec apps talking to CreaGrafana Alloy (OTLP).
-Implements the bot fleet metrics from [docs/telemetry-contract.md](../../docs/telemetry-contract.md).
+Implements the bot and MCP fleet metrics from [docs/telemetry-contract.md](../../docs/telemetry-contract.md).
 
 ## Install from GitHub Packages
 
@@ -53,7 +53,7 @@ Explicit fields override env:
 | `deploymentEnvironment` | `DEPLOY_ENV` | no (default `local`) |
 | `serviceVersion` | `OTEL_SERVICE_VERSION` | no |
 | `endpoint` | `OTEL_EXPORTER_OTLP_ENDPOINT` | no (default `http://127.0.0.1:4318`) |
-| `kind` | — | no (`app` \| `bot`, default `app`) |
+| `kind` | — | no (`app` \| `bot` \| `mcp`, default `app`) |
 
 ## App
 
@@ -110,8 +110,45 @@ tel.bot.recordHandledUpdate({
 await tel.shutdown();
 ```
 
+## MCP
+
+Emits `mcp_tool_calls_total`, `mcp_tool_duration_seconds`, `mcp_errors_total`, `mcp_up`.
+`recordToolCall` always records the histogram and increments the counter together.
+
+```js
+const { initTelemetry } = require("@crearec/otel");
+
+const tel = initTelemetry({
+  kind: "mcp",
+  serviceName: "apple-calendar",
+  serviceNamespace: "mcp",
+});
+
+tel.mcp.setUp(true);
+
+const started = process.hrtime.bigint();
+// ... handle tool call ...
+const durationSeconds = Number(process.hrtime.bigint() - started) / 1e9;
+
+tel.mcp.recordToolCall({
+  result: "success",
+  durationSeconds,
+  tool: "calendar_list",
+});
+
+// on application failure:
+tel.mcp.recordError({ errorType: "timeout", tool: "calendar_create_event" });
+tel.mcp.recordToolCall({
+  result: "error",
+  durationSeconds,
+  tool: "calendar_create_event",
+});
+
+await tel.shutdown();
+```
+
 ## Notes
 
 - Export failures must not crash business logic; shutdown logs warnings.
 - Do not put high-cardinality labels on metrics (user ids, URLs, paths).
-- Duration unit is **seconds**, matching `bot_handler_duration_seconds`.
+- Duration unit is **seconds**, matching `bot_handler_duration_seconds` / `mcp_tool_duration_seconds`.
