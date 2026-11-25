@@ -37,3 +37,12 @@ There is no image publish step. Actions never overwrites `.env` or `data/`.
 - Otherwise on the same host: `http://127.0.0.1:4318`
 
 Grafana UI: `http://<GRAFANA_BIND>:3000` over Tailscale only.
+
+## Media USB disk monitoring
+
+Host SMART and filesystem metrics for `/dev/sdb` (`/mnt/media-usb`) are collected by `scripts/media-usb-metrics.py` as user `grok` (every 4 minutes via cron) and pushed via OTLP HTTP to `http://127.0.0.1:4318/v1/metrics` (with a local Prometheus textfile copy at `/home/grok/media-usb-metrics/media_usb_disk.prom`).
+
+- Sudoers requirement for `grok`: `NOPASSWD: /usr/sbin/smartctl -a /dev/sdb`
+- Dashboard: `config/grafana/dashboards/media-usb-disk.json` (`uid: crea-media-usb-disk`)
+- Alert rules: `config/grafana/provisioning/alerting/media-usb-disk.yaml`
+- Email alerts require `GF_SMTP_*` variables in server `.env` and a real recipient address in Grafana Alerting contact points.

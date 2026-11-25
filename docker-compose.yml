@@ -83,6 +83,13 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_FEATURE_TOGGLES_ENABLE: traceqlEditor,traceToMetrics,traceToLogs
       GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL:-http://localhost:3000}
+      GF_SMTP_ENABLED: ${GF_SMTP_ENABLED:-false}
+      GF_SMTP_HOST: ${GF_SMTP_HOST:-}
+      GF_SMTP_USER: ${GF_SMTP_USER:-}
+      GF_SMTP_PASSWORD: ${GF_SMTP_PASSWORD:-}
+      GF_SMTP_FROM_ADDRESS: ${GF_SMTP_FROM_ADDRESS:-admin@grafana.localhost}
+      GF_SMTP_FROM_NAME: ${GF_SMTP_FROM_NAME:-CreaGrafana}
+      GF_SMTP_SKIP_VERIFY: ${GF_SMTP_SKIP_VERIFY:-false}
     volumes:
       - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro

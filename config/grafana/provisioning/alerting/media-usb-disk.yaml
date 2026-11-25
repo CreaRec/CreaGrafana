@@ -1,0 +1,409 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: media-usb-disk
+    folder: CreaGrafana
+    interval: 1m
+    rules:
+      - uid: media-usb-smart-health-failed
+        title: Media USB SMART health failed
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: mimir
+            model:
+              datasource:
+                type: prometheus
+                uid: mimir
+              expr: last_over_time(media_usb_smart_health_passed[15m])
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: crea-media-usb-disk
+        panelId: 3
+        noDataState: OK
+        execErrState: Alerting
+        for: 0s
+        annotations:
+          summary: "Media USB disk (/dev/sdb) SMART overall-health assessment failed"
+          description: "SMART overall-health is no longer PASSED for /dev/sdb (/mnt/media-usb). Value: {{ $values.B }}."
+        labels:
+          severity: critical
+          host: debian-server
+          disk: media-usb
+
+      - uid: media-usb-bad-sectors
+        title: Media USB SMART bad sectors > 0
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: mimir
+            model:
+              datasource:
+                type: prometheus
+                uid: mimir
+              expr: last_over_time(media_usb_smart_reallocated_sectors[15m]) + last_over_time(media_usb_smart_pending_sectors[15m]) + last_over_time(media_usb_smart_offline_uncorrectable_sectors[15m])
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: crea-media-usb-disk
+        panelId: 9
+        noDataState: OK
+        execErrState: Alerting
+        for: 0s
+        annotations:
+          summary: "Media USB disk (/dev/sdb) reports bad/pending/uncorrectable sectors"
+          description: "Sum of SMART ID 5 (reallocated) + ID 197 (pending) + ID 198 (offline uncorrectable) is {{ $values.B }} (> 0)."
+        labels:
+          severity: critical
+          host: debian-server
+          disk: media-usb
+
+      - uid: media-usb-high-temperature
+        title: Media USB temperature > 50C
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: mimir
+            model:
+              datasource:
+                type: prometheus
+                uid: mimir
+              expr: last_over_time(media_usb_smart_temperature_celsius[15m])
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 50
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: crea-media-usb-disk
+        panelId: 7
+        noDataState: OK
+        execErrState: Alerting
+        for: 10m
+        annotations:
+          summary: "Media USB disk (/dev/sdb) temperature above 50C for 10m"
+          description: "Current temperature is {{ $values.B }} C (threshold: 50 C)."
+        labels:
+          severity: warning
+          host: debian-server
+          disk: media-usb
+
+      - uid: media-usb-low-free-space
+        title: Media USB free space < 10%
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: mimir
+            model:
+              datasource:
+                type: prometheus
+                uid: mimir
+              expr: (last_over_time(media_usb_fs_avail_bytes[15m]) / last_over_time(media_usb_fs_size_bytes[15m])) * 100
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 10
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: crea-media-usb-disk
+        panelId: 5
+        noDataState: OK
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: "Media USB (/mnt/media-usb) free space below 10%"
+          description: "Available space on /mnt/media-usb is {{ $values.B }}%."
+        labels:
+          severity: warning
+          host: debian-server
+          disk: media-usb
+
+      - uid: media-usb-disk-or-mount-absent
+        title: Media USB disk or mount absent
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: mimir
+            model:
+              datasource:
+                type: prometheus
+                uid: mimir
+              expr: last_over_time(media_usb_disk_present[15m]) * last_over_time(media_usb_mount_present[15m])
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: crea-media-usb-disk
+        panelId: 1
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 10m
+        annotations:
+          summary: "Media USB disk (/dev/sdb) or /mnt/media-usb mount is absent for 10m"
+          description: "Either /dev/sdb is missing/unreadable or /mnt/media-usb is not mounted (product={{ $values.B }})."
+        labels:
+          severity: critical
+          host: debian-server
+          disk: media-usb
+
+      - uid: media-usb-metrics-stale
+        title: Media USB metrics stale (> 10m)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: mimir
+            model:
+              datasource:
+                type: prometheus
+                uid: mimir
+              expr: time() - last_over_time(media_usb_metrics_last_success_timestamp_seconds[24h])
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 600
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: crea-media-usb-disk
+        panelId: 13
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 0s
+        annotations:
+          summary: "Media USB metrics collector has not reported for > 10m"
+          description: "Age since last successful collection is {{ $values.B }}s (threshold: 600s)."
+        labels:
+          severity: warning
+          host: debian-server
+          disk: media-usb

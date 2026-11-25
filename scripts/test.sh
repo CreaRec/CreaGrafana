@@ -14,6 +14,9 @@ test -f config/mimir/mimir.yaml
 test -f config/grafana/provisioning/datasources/datasources.yaml
 test -f config/grafana/provisioning/dashboards/dashboards.yaml
 test -f config/grafana/dashboards/host-listen-ports.json
+test -f config/grafana/dashboards/media-usb-disk.json
+test -f config/grafana/provisioning/alerting/media-usb-disk.yaml
+test -f scripts/media-usb-metrics.py
 test -f config/grafana/dashboards/services-fleet.json
 test -f config/grafana/dashboards/service-detail.json
 test ! -e config/grafana/dashboards/bots-fleet.json
@@ -54,7 +57,8 @@ grep -q 'severity_text=~\\"(?i)error|fatal\\"' config/grafana/dashboards/service
 grep -q 'severity_text=~\\"(?i)warn\\"' config/grafana/dashboards/service-detail.json
 ! grep -q 'error|exception|fail' \
   config/grafana/dashboards/services-fleet.json \
-  config/grafana/dashboards/service-detail.json
+  config/grafana/dashboards/service-detail.json \
+  config/grafana/dashboards/media-usb-disk.json
 ! grep -q '"type": "custom"' \
   config/grafana/dashboards/services-fleet.json \
   config/grafana/dashboards/service-detail.json
@@ -75,7 +79,8 @@ grep -q 'phone_unlocks_total' docs/telemetry-contract.md
 echo "==> dashboard JSON + log panels"
 python3 -c 'import json,sys; [json.load(open(p)) for p in sys.argv[1:]]' \
   config/grafana/dashboards/services-fleet.json \
-  config/grafana/dashboards/service-detail.json
+  config/grafana/dashboards/service-detail.json \
+  config/grafana/dashboards/media-usb-disk.json
 python3 <<'PY'
 import json
 for p in (
@@ -101,6 +106,7 @@ grep -q 'recordHandledUpdate' packages/crea-otel/README.md
 
 echo "==> listen-ports script syntax"
 sh -n config/listen-ports/export.sh
+python3 -m py_compile scripts/media-usb-metrics.py
 
 echo "==> docker compose config"
 docker network create lgtm 2>/dev/null || true
