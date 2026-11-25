@@ -366,7 +366,7 @@
               },
               {
                 "color": "red",
-                "value": 50
+                "value": 55
               }
             ]
           },
@@ -535,7 +535,7 @@
               },
               {
                 "color": "red",
-                "value": 50
+                "value": 55
               }
             ]
           },
@@ -1208,5 +1208,5 @@
   "timezone": "browser",
   "title": "Media USB disk",
   "uid": "crea-media-usb-disk",
-  "version": 2
+  "version": 3
 }
