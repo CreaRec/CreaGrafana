@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Collect SMART and filesystem metrics for /mnt/media-usb (/dev/sdb) and export via textfile + OTLP HTTP."""
+"""Collect SMART and filesystem metrics for /mnt/media-usb (/dev/sdb) and export via textfile + OTLP HTTP.
+
+When permitted, uses `smartctl -n standby` so a sleeping disk is not spun up.
+In standby: emit presence + media_usb_disk_standby=1 + last-success timestamp,
+but skip SMART attributes and statvfs (ntfs-3g may wake the drive to report free space).
+"""
 
 from __future__ import annotations
 
@@ -21,6 +26,7 @@ PROM_PATH = Path("/home/grok/media-usb-metrics/media_usb_disk.prom")
 OTLP_URL = os.environ.get("OTLP_METRICS_URL", "http://127.0.0.1:4318/v1/metrics")
 LOCK_PATH = "/tmp/media-usb-metrics.lock"
 HOST_LABEL = "debian-server"
+SMARTCTL = "/usr/sbin/smartctl"
 
 # SMART attribute IDs -> metric suffixes
 SMART_ATTR_IDS = {
@@ -35,6 +41,12 @@ SMART_ATTR_IDS = {
 
 ATTR_LINE_RE = re.compile(
     r"^\s*(\d+)\s+(\S+)\s+0x[0-9a-fA-F]+\s+\d+\s+\d+\s+\d+\s+\S+\s+\S+\s+\S+\s+(-?\d+)"
+)
+# smartctl -n standby: "Device is in STANDBY mode, exiting" / "Power mode is: STANDBY"
+STANDBY_RE = re.compile(
+    r"Device is in (STANDBY|SLEEP)(?:\s+\([^)]+\))? mode"
+    r"|Power mode is:\s*(STANDBY|SLEEP)\b",
+    re.I,
 )
 
 
@@ -79,36 +91,84 @@ def parse_smartctl_output(output: str) -> tuple[int | None, dict[int, int]]:
     return health_passed, attrs
 
 
+def is_standby_output(returncode: int, output: str) -> bool:
+    """True when smartctl -n standby skipped the disk because it is sleeping.
+
+    Exit bit 1 (value 2) is set in this case, together with a STANDBY/SLEEP message.
+    Bit 1 alone is not enough (device-open failures use the same bit).
+    """
+    text = output or ""
+    if STANDBY_RE.search(text):
+        return True
+    if (returncode & 0x02) and re.search(r"\b(STANDBY|SLEEP)\b", text, re.I):
+        return True
+    return False
+
+
+def smartctl_n_standby_permitted() -> bool:
+    """True when sudoers allows exactly: smartctl -n standby -a /dev/sdb."""
+    try:
+        proc = subprocess.run(
+            ["sudo", "-n", "-l", "--", SMARTCTL, "-n", "standby", "-a", DEVICE],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        return proc.returncode == 0
+    except (subprocess.SubprocessError, OSError):
+        return False
+
+
+def run_smartctl() -> tuple[int, str, bool]:
+    """Run smartctl, preferring -n standby when sudoers allows it.
+
+    Returns (returncode, combined output, used_standby_flag).
+    """
+    use_standby_flag = smartctl_n_standby_permitted()
+    if use_standby_flag:
+        cmd = ["sudo", "-n", SMARTCTL, "-n", "standby", "-a", DEVICE]
+    else:
+        cmd = ["sudo", "-n", SMARTCTL, "-a", DEVICE]
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    combined = (proc.stdout or "") + "\n" + (proc.stderr or "")
+    return proc.returncode, combined, use_standby_flag
+
+
 def collect_metrics() -> list[tuple[str, str, float]]:
     now = time.time()
     metrics: list[tuple[str, str, float]] = []
 
-    disk_present = 0
+    disk_present = 1 if is_expected_disk_present() else 0
+    standby = 0
     smart_health: int | None = None
     smart_attrs: dict[int, int] = {}
 
-    if is_expected_disk_present():
+    if disk_present:
         try:
-            proc = subprocess.run(
-                ["sudo", "-n", "/usr/sbin/smartctl", "-a", DEVICE],
-                capture_output=True,
-                text=True,
-                timeout=20,
-                check=False,
-            )
-            # Note: smartctl returns a bitmask; bit 5 (32) means an attribute failed in the past
-            # (e.g., Airflow_Temperature_Cel), while bits 0-1 (0x03) indicate CLI or open failure.
-            if (proc.returncode & 0x03) == 0:
-                health, parsed = parse_smartctl_output(proc.stdout)
+            rc, output, used_standby_flag = run_smartctl()
+            if used_standby_flag and is_standby_output(rc, output):
+                standby = 1
+            elif (rc & 0x03) == 0:
+                # Bits 0-1 clear: CLI parsed and the device was opened (awake).
+                # Bit 5 (32) means an attribute failed in the past (e.g. Airflow_Temperature_Cel).
+                health, parsed = parse_smartctl_output(output)
                 if health is not None:
-                    disk_present = 1
                     smart_health = health
                     smart_attrs = parsed
         except (subprocess.SubprocessError, OSError):
-            disk_present = 0
+            pass
 
-    metrics.append(("media_usb_disk_present", "Whether the expected /dev/sdb Seagate USB disk is present and readable (1=yes, 0=no)", float(disk_present)))
-    if disk_present == 1 and smart_health is not None:
+    metrics.append(("media_usb_disk_present", "Whether the expected /dev/sdb Seagate USB disk is present (1=yes, 0=no)", float(disk_present)))
+    metrics.append(("media_usb_disk_standby", "Whether the disk is in STANDBY/SLEEP (1=sleeping, not spun up; 0=awake or unknown)", float(standby)))
+
+    if standby == 0 and smart_health is not None:
         metrics.append(("media_usb_smart_health_passed", "SMART overall-health assessment (1=PASSED, 0=FAILED)", float(smart_health)))
         for attr_id, (name, help_text) in SMART_ATTR_IDS.items():
             if attr_id in smart_attrs:
@@ -117,7 +177,9 @@ def collect_metrics() -> list[tuple[str, str, float]]:
     mount_present = 1 if is_mount_present(MOUNTPOINT) else 0
     metrics.append(("media_usb_mount_present", "Whether /mnt/media-usb is currently mounted (1=yes, 0=no)", float(mount_present)))
 
-    if mount_present == 1:
+    # Skip statvfs while the disk is sleeping: ntfs-3g may read volume metadata
+    # (free-cluster info) and spin the drive up.
+    if mount_present == 1 and standby == 0:
         try:
             st = os.statvfs(MOUNTPOINT)
             size_bytes = float(st.f_blocks * st.f_frsize)
@@ -188,7 +250,7 @@ def push_otlp_http(metrics: list[tuple[str, str, float]], url: str) -> None:
                 },
                 "scopeMetrics": [
                     {
-                        "scope": {"name": "media-usb-metrics", "version": "1.0.0"},
+                        "scope": {"name": "media-usb-metrics", "version": "1.1.0"},
                         "metrics": otlp_metrics,
                     }
                 ],

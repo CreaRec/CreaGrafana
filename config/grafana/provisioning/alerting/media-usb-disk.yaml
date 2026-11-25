@@ -1,4 +1,8 @@
 apiVersion: 1
+# While the disk is in STANDBY the collector omits SMART and filesystem metrics
+# and keeps emitting presence + last-success. SMART and low-free-space rules
+# must stay noDataState: OK so a long sleep does not page. The absent rule
+# keeps seeing present metrics; the stale rule keeps seeing a fresh timestamp.
 
 groups:
   - orgId: 1

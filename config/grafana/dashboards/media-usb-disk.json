@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "SMART health, temperature, sector counters, mount presence, and capacity for the Seagate ST3000DM001 external USB disk (/dev/sdb mounted at /mnt/media-usb).",
+  "description": "SMART health, temperature, sector counters, mount presence, standby state, and capacity for the Seagate ST3000DM001 external USB disk (/dev/sdb mounted at /mnt/media-usb). A sleeping disk is not spun up; SMART and filesystem size metrics are omitted while in standby.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -196,6 +196,86 @@
             {
               "options": {
                 "0": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "Awake"
+                },
+                "1": {
+                  "color": "blue",
+                  "index": 1,
+                  "text": "Standby"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "blue",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mimir"
+          },
+          "expr": "last_over_time(media_usb_disk_standby[15m])",
+          "instant": true,
+          "legendFormat": "Standby",
+          "refId": "A"
+        }
+      ],
+      "title": "Standby",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mimir"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
                   "color": "red",
                   "index": 1,
                   "text": "FAILED"
@@ -229,7 +309,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 8,
+        "x": 12,
         "y": 0
       },
       "id": 3,
@@ -297,7 +377,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 12,
+        "x": 16,
         "y": 0
       },
       "id": 4,
@@ -366,7 +446,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 16,
+        "x": 20,
         "y": 0
       },
       "id": 5,
@@ -397,66 +477,6 @@
         }
       ],
       "title": "Free space",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          },
-          "unit": "h"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 0
-      },
-      "id": 6,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "last_over_time(media_usb_smart_power_on_hours[15m])",
-          "instant": true,
-          "legendFormat": "Power-on hours",
-          "refId": "A"
-        }
-      ],
-      "title": "Power-on hours",
       "type": "stat"
     },
     {
@@ -663,12 +683,21 @@
             "type": "prometheus",
             "uid": "mimir"
           },
+          "expr": "media_usb_disk_standby",
+          "legendFormat": "Standby (1=sleeping)",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mimir"
+          },
           "expr": "media_usb_smart_health_passed",
           "legendFormat": "SMART PASSED",
           "refId": "C"
         }
       ],
-      "title": "Disk, mount & SMART status",
+      "title": "Disk, mount, standby & SMART status",
       "type": "timeseries"
     },
     {
@@ -937,7 +966,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
+        "w": 6,
         "x": 0,
         "y": 20
       },
@@ -997,8 +1026,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
-        "x": 8,
+        "w": 6,
+        "x": 6,
         "y": 20
       },
       "id": 12,
@@ -1046,6 +1075,66 @@
             "mode": "absolute",
             "steps": [
               {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 20
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "mimir"
+          },
+          "expr": "last_over_time(media_usb_smart_power_on_hours[15m])",
+          "instant": true,
+          "legendFormat": "Power-on hours",
+          "refId": "A"
+        }
+      ],
+      "title": "Power-on hours",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mimir"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
                 "color": "green",
                 "value": null
               },
@@ -1065,8 +1154,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
-        "x": 16,
+        "w": 6,
+        "x": 18,
         "y": 20
       },
       "id": 13,
@@ -1119,5 +1208,5 @@
   "timezone": "browser",
   "title": "Media USB disk",
   "uid": "crea-media-usb-disk",
-  "version": 1
+  "version": 2
 }

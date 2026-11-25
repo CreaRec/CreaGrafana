@@ -42,7 +42,8 @@ Grafana UI: `http://<GRAFANA_BIND>:3000` over Tailscale only.
 
 Host SMART and filesystem metrics for `/dev/sdb` (`/mnt/media-usb`) are collected by `scripts/media-usb-metrics.py` as user `grok` (every 4 minutes via cron) and pushed via OTLP HTTP to `http://127.0.0.1:4318/v1/metrics` (with a local Prometheus textfile copy at `/home/grok/media-usb-metrics/media_usb_disk.prom`).
 
-- Sudoers requirement for `grok`: `NOPASSWD: /usr/sbin/smartctl -a /dev/sdb`
+- Sudoers for `grok` (in `/etc/sudoers.d/grok-smart`): `NOPASSWD: /usr/sbin/smartctl -a /dev/sdb` and `NOPASSWD: /usr/sbin/smartctl -n standby -a /dev/sdb`. The collector prefers `-n standby` (checked via `sudo -n -l`) so a sleeping disk is not spun up; it falls back to `smartctl -a` only if the standby rule is missing.
+- In standby the collector still emits `media_usb_disk_present`, `media_usb_mount_present`, `media_usb_disk_standby=1`, and `media_usb_metrics_last_success_timestamp_seconds`. It does **not** emit SMART attributes or filesystem size/free metrics (`statvfs` on ntfs-3g can wake the drive). Alert rules stay quiet: SMART and low-free-space rules use `noDataState: OK`; presence and last-success timestamps keep being updated.
 - Dashboard: `config/grafana/dashboards/media-usb-disk.json` (`uid: crea-media-usb-disk`)
 - Alert rules: `config/grafana/provisioning/alerting/media-usb-disk.yaml`
 - Email alerts require `GF_SMTP_*` variables in server `.env` and a real recipient address in Grafana Alerting contact points.
