@@ -122,6 +122,15 @@ fi
 grep -q 'type: telegram' config/grafana/provisioning/alerting/telegram.yaml
 grep -q 'bottoken: \$GF_TELEGRAM_BOT_TOKEN' config/grafana/provisioning/alerting/telegram.yaml
 grep -q '\$GF_TELEGRAM_CHAT_ID' config/grafana/provisioning/alerting/telegram.yaml
+# `|` (not `|-`) so interpolated numeric chat ids stay strings at provision time
+if ! grep -A1 'chatid:' config/grafana/provisioning/alerting/telegram.yaml | grep -qE '^[[:space:]]*chatid: \|$'; then
+  echo "chatid must use YAML literal block |" >&2
+  exit 1
+fi
+if grep -q 'chatid: |-' config/grafana/provisioning/alerting/telegram.yaml; then
+  echo "chatid must not use |- (strips newline, Grafana coerces to number)" >&2
+  exit 1
+fi
 grep -q 'receiver: telegram' config/grafana/provisioning/alerting/telegram.yaml
 if grep -q 'grafana-default-email' config/grafana/provisioning/alerting/telegram.yaml; then
   echo "unexpected grafana-default-email in telegram.yaml" >&2
