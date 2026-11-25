@@ -117,7 +117,15 @@ grep -q '^GF_TELEGRAM_CHAT_ID=165484160$' .env.example
 grep -q 'type: telegram' config/grafana/provisioning/alerting/telegram.yaml
 grep -q 'bottoken: \$GF_TELEGRAM_BOT_TOKEN' config/grafana/provisioning/alerting/telegram.yaml
 grep -q '\$GF_TELEGRAM_CHAT_ID' config/grafana/provisioning/alerting/telegram.yaml
-grep -q 'receiver: grafana-default-email' config/grafana/provisioning/alerting/telegram.yaml
+grep -q 'receiver: telegram' config/grafana/provisioning/alerting/telegram.yaml
+if grep -q 'grafana-default-email' config/grafana/provisioning/alerting/telegram.yaml; then
+  echo "unexpected grafana-default-email in telegram.yaml" >&2
+  exit 1
+fi
+if grep -qiE 'smtp|email' docker-compose.yml .env.example; then
+  echo "unexpected SMTP/email leftovers in compose or .env.example" >&2
+  exit 1
+fi
 grep -q "\['disk', '=', 'media-usb'\]" config/grafana/provisioning/alerting/telegram.yaml
 grep -q 'define "crea_telegram.message"' config/grafana/provisioning/alerting/telegram.yaml
 # Bot tokens look like 123456789:AAH... — must never be committed.

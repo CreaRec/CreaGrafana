@@ -42,10 +42,11 @@ contactPoints:
           message: '{{ template "crea_telegram.message" . }}'
 
 # The policy tree is a single resource: provisioning replaces the whole tree.
-# Keep the existing default receiver and add only a child route for media-usb.
+# Root and media-usb child both use the Telegram contact point (the only notifier).
+# Grafana's built-in default contact point is left in place unused.
 policies:
   - orgId: 1
-    receiver: grafana-default-email
+    receiver: telegram
     group_by:
       - grafana_folder
       - alertname

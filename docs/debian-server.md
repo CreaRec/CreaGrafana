@@ -46,11 +46,10 @@ Host SMART and filesystem metrics for `/dev/sdb` (`/mnt/media-usb`) are collecte
 - In standby the collector still emits `media_usb_disk_present`, `media_usb_mount_present`, `media_usb_disk_standby=1`, and `media_usb_metrics_last_success_timestamp_seconds`. It does **not** emit SMART attributes or filesystem size/free metrics (`statvfs` on ntfs-3g can wake the drive). Alert rules stay quiet: SMART and low-free-space rules use `noDataState: OK`; presence and last-success timestamps keep being updated.
 - Dashboard: `config/grafana/dashboards/media-usb-disk.json` (`uid: crea-media-usb-disk`)
 - Alert rules: `config/grafana/provisioning/alerting/media-usb-disk.yaml` (label `disk=media-usb`)
-- Telegram notifications: `config/grafana/provisioning/alerting/telegram.yaml` — contact point `telegram` (`@crea_alerts_bot`), child route matching `disk=media-usb`. The default policy receiver stays `grafana-default-email`. Provisioning a policy tree replaces the whole tree; only that one child route is added.
+- Telegram notifications: `config/grafana/provisioning/alerting/telegram.yaml` — contact point `telegram` (`@crea_alerts_bot`) is the only notifier. The provisioned policy tree uses it as the root receiver and as the child route for `disk=media-usb`. Provisioning a policy tree replaces the whole tree.
 - **Required before deploy:** set the following in `/home/crearec/crea-grafana/.env` (Actions never overwrites `.env`). Grafana 11.5.2 validates the Telegram bot token at startup and **will fail to start** if `GF_TELEGRAM_BOT_TOKEN` is empty:
   ```
   GF_TELEGRAM_BOT_TOKEN=<token>
   GF_TELEGRAM_CHAT_ID=165484160
   ```
   Merge to `main` only after `.env` is updated, or Grafana will not come up.
-- Optional SMTP (`GF_SMTP_*`) remains available for the default email contact point; media-usb alerts go to Telegram, not email.
