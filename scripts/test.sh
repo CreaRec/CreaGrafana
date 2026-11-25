@@ -16,6 +16,7 @@ test -f config/grafana/provisioning/dashboards/dashboards.yaml
 test -f config/grafana/dashboards/host-listen-ports.json
 test -f config/grafana/dashboards/media-usb-disk.json
 test -f config/grafana/provisioning/alerting/media-usb-disk.yaml
+test -f config/grafana/provisioning/alerting/telegram.yaml
 test -f scripts/media-usb-metrics.py
 test -f config/grafana/dashboards/services-fleet.json
 test -f config/grafana/dashboards/service-detail.json
@@ -107,6 +108,20 @@ grep -q 'recordHandledUpdate' packages/crea-otel/README.md
 echo "==> listen-ports script syntax"
 sh -n config/listen-ports/export.sh
 python3 -m py_compile scripts/media-usb-metrics.py
+
+echo "==> telegram alerting provisioning"
+grep -qE 'GF_TELEGRAM_BOT_TOKEN:[[:space:]]*\$\{GF_TELEGRAM_BOT_TOKEN:-\}' docker-compose.yml
+grep -q 'GF_TELEGRAM_CHAT_ID: \${GF_TELEGRAM_CHAT_ID:-165484160}' docker-compose.yml
+grep -q '^GF_TELEGRAM_BOT_TOKEN=$' .env.example
+grep -q '^GF_TELEGRAM_CHAT_ID=165484160$' .env.example
+grep -q 'type: telegram' config/grafana/provisioning/alerting/telegram.yaml
+grep -q 'bottoken: \$GF_TELEGRAM_BOT_TOKEN' config/grafana/provisioning/alerting/telegram.yaml
+grep -q '\$GF_TELEGRAM_CHAT_ID' config/grafana/provisioning/alerting/telegram.yaml
+grep -q 'receiver: grafana-default-email' config/grafana/provisioning/alerting/telegram.yaml
+grep -q "\['disk', '=', 'media-usb'\]" config/grafana/provisioning/alerting/telegram.yaml
+grep -q 'define "crea_telegram.message"' config/grafana/provisioning/alerting/telegram.yaml
+# Bot tokens look like 123456789:AAH... — must never be committed.
+! grep -RE '[0-9]{8,}:[A-Za-z0-9_-]{20,}' --include='*.yml' --include='*.yaml' --include='*.md' --include='*.example' --include='docker-compose.yml' config docs .env.example docker-compose.yml
 
 echo "==> docker compose config"
 docker network create lgtm 2>/dev/null || true

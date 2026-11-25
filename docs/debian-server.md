@@ -45,5 +45,12 @@ Host SMART and filesystem metrics for `/dev/sdb` (`/mnt/media-usb`) are collecte
 - Sudoers for `grok` (in `/etc/sudoers.d/grok-smart`): `NOPASSWD: /usr/sbin/smartctl -a /dev/sdb` and `NOPASSWD: /usr/sbin/smartctl -n standby -a /dev/sdb`. The collector prefers `-n standby` (checked via `sudo -n -l`) so a sleeping disk is not spun up; it falls back to `smartctl -a` only if the standby rule is missing.
 - In standby the collector still emits `media_usb_disk_present`, `media_usb_mount_present`, `media_usb_disk_standby=1`, and `media_usb_metrics_last_success_timestamp_seconds`. It does **not** emit SMART attributes or filesystem size/free metrics (`statvfs` on ntfs-3g can wake the drive). Alert rules stay quiet: SMART and low-free-space rules use `noDataState: OK`; presence and last-success timestamps keep being updated.
 - Dashboard: `config/grafana/dashboards/media-usb-disk.json` (`uid: crea-media-usb-disk`)
-- Alert rules: `config/grafana/provisioning/alerting/media-usb-disk.yaml`
-- Email alerts require `GF_SMTP_*` variables in server `.env` and a real recipient address in Grafana Alerting contact points.
+- Alert rules: `config/grafana/provisioning/alerting/media-usb-disk.yaml` (label `disk=media-usb`)
+- Telegram notifications: `config/grafana/provisioning/alerting/telegram.yaml` — contact point `telegram` (`@crea_alerts_bot`), child route matching `disk=media-usb`. The default policy receiver stays `grafana-default-email`. Provisioning a policy tree replaces the whole tree; only that one child route is added.
+- **Required before deploy:** set the following in `/home/crearec/crea-grafana/.env` (Actions never overwrites `.env`). Grafana 11.5.2 validates the Telegram bot token at startup and **will fail to start** if `GF_TELEGRAM_BOT_TOKEN` is empty:
+  ```
+  GF_TELEGRAM_BOT_TOKEN=<token>
+  GF_TELEGRAM_CHAT_ID=165484160
+  ```
+  Merge to `main` only after `.env` is updated, or Grafana will not come up.
+- Optional SMTP (`GF_SMTP_*`) remains available for the default email contact point; media-usb alerts go to Telegram, not email.
