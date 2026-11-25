@@ -25,7 +25,10 @@ templates:
 #
 # File provisioning has no secure_settings field on receivers (Grafana 11.5.2);
 # bottoken lives under settings and is interpolated from the environment.
-# chatid must stay a YAML string (block scalar) — a bare number fails unmarshalling.
+# chatid must stay a YAML string. Use `|` (keep the trailing newline), not `|-`.
+# Grafana 11.5.2 interpolates env vars after YAML parse and then unmarshals
+# settings as JSON; a newline-stripped digit string is coerced to a number and
+# startup fails with: cannot unmarshal number into Config.chatid of type string.
 contactPoints:
   - orgId: 1
     name: telegram
@@ -35,7 +38,7 @@ contactPoints:
         disableResolveMessage: false
         settings:
           bottoken: $GF_TELEGRAM_BOT_TOKEN
-          chatid: |-
+          chatid: |
             $GF_TELEGRAM_CHAT_ID
           parse_mode: HTML
           disable_web_page_preview: true
