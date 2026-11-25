@@ -1,0 +1,59 @@
+apiVersion: 1
+
+# Notification templates are not env-interpolated, so Go template `$` is safe here.
+# Contact-point `settings` ARE interpolated: any `$name` becomes an env var
+# (empty if unset). Escape a literal `$` as `$$` if you add one there.
+templates:
+  - orgId: 1
+    name: crea_telegram.message
+    template: |
+      {{ define "crea_telegram.message" -}}
+      {{ range .Alerts -}}
+      <b>{{ .Labels.alertname }}</b> — {{ .Status | toUpper }}
+      {{ with .Annotations.summary }}{{ . }}
+      {{ end -}}
+      {{ with .ValueString }}Value: {{ . }}
+      {{ end -}}
+      {{ with .DashboardURL }}<a href="{{ . }}">Open dashboard</a>
+      {{ end }}
+      {{ end -}}
+      {{ end }}
+
+# bottoken is required by Grafana 11.5.2 at provision time (ValidateContactPoint
+# on startup). An empty $GF_TELEGRAM_BOT_TOKEN makes Grafana refuse to start.
+# Set it in the server .env before this file is deployed.
+#
+# File provisioning has no secure_settings field on receivers (Grafana 11.5.2);
+# bottoken lives under settings and is interpolated from the environment.
+# chatid must stay a YAML string (block scalar) — a bare number fails unmarshalling.
+contactPoints:
+  - orgId: 1
+    name: telegram
+    receivers:
+      - uid: crea-telegram
+        type: telegram
+        disableResolveMessage: false
+        settings:
+          bottoken: $GF_TELEGRAM_BOT_TOKEN
+          chatid: |-
+            $GF_TELEGRAM_CHAT_ID
+          parse_mode: HTML
+          disable_web_page_preview: true
+          message: '{{ template "crea_telegram.message" . }}'
+
+# The policy tree is a single resource: provisioning replaces the whole tree.
+# Root and media-usb child both use the Telegram contact point (the only notifier).
+# Grafana's built-in default contact point is left in place unused.
+policies:
+  - orgId: 1
+    receiver: telegram
+    group_by:
+      - grafana_folder
+      - alertname
+    routes:
+      - receiver: telegram
+        object_matchers:
+          - ['disk', '=', 'media-usb']
+        group_by:
+          - grafana_folder
+          - alertname
