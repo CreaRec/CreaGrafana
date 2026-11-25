@@ -86,7 +86,7 @@ services:
       # Telegram alerting (provisioned contact point). Token must be non-empty
       # or Grafana 11.5.2 fails to start. Chat id defaults to Nikita's private chat.
       GF_TELEGRAM_BOT_TOKEN: ${GF_TELEGRAM_BOT_TOKEN:-}
-      GF_TELEGRAM_CHAT_ID: ${GF_TELEGRAM_CHAT_ID:-165484160}
+      GF_TELEGRAM_CHAT_ID: ${GF_TELEGRAM_CHAT_ID}
     volumes:
       - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro

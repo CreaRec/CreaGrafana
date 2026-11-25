@@ -50,6 +50,6 @@ Host SMART and filesystem metrics for `/dev/sdb` (`/mnt/media-usb`) are collecte
 - **Required before deploy:** set the following in `/home/crearec/crea-grafana/.env` (Actions never overwrites `.env`). Grafana 11.5.2 validates the Telegram bot token at startup and **will fail to start** if `GF_TELEGRAM_BOT_TOKEN` is empty:
   ```
   GF_TELEGRAM_BOT_TOKEN=<token>
-  GF_TELEGRAM_CHAT_ID=165484160
+  GF_TELEGRAM_CHAT_ID=<chat-id>
   ```
   Merge to `main` only after `.env` is updated, or Grafana will not come up.

@@ -48,7 +48,7 @@ GF_SERVER_ROOT_URL=http://100.x.x.x:3000
 
 # Required before deploying Telegram alert provisioning (Grafana will not start if the token is empty):
 GF_TELEGRAM_BOT_TOKEN='<token>'
-GF_TELEGRAM_CHAT_ID=165484160
+GF_TELEGRAM_CHAT_ID='<chat-id>'
 ```
 
 OTLP ports `4317`/`4318` are published on all interfaces so other containers on the host can use `127.0.0.1:4318`. Prefer attaching bots to the external Docker network `lgtm` and using `http://alloy:4318` (see [examples/README.md](../examples/README.md)).

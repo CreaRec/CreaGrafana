@@ -111,9 +111,14 @@ python3 -m py_compile scripts/media-usb-metrics.py
 
 echo "==> telegram alerting provisioning"
 grep -qE 'GF_TELEGRAM_BOT_TOKEN:[[:space:]]*\$\{GF_TELEGRAM_BOT_TOKEN:-\}' docker-compose.yml
-grep -q 'GF_TELEGRAM_CHAT_ID: \${GF_TELEGRAM_CHAT_ID:-165484160}' docker-compose.yml
+grep -q 'GF_TELEGRAM_CHAT_ID: \${GF_TELEGRAM_CHAT_ID}' docker-compose.yml
+! grep -q 'GF_TELEGRAM_CHAT_ID:-' docker-compose.yml
 grep -q '^GF_TELEGRAM_BOT_TOKEN=$' .env.example
-grep -q '^GF_TELEGRAM_CHAT_ID=165484160$' .env.example
+grep -q '^GF_TELEGRAM_CHAT_ID=$' .env.example
+if grep -R '165484160' docker-compose.yml .env.example docs config; then
+  echo "chat id must not be committed" >&2
+  exit 1
+fi
 grep -q 'type: telegram' config/grafana/provisioning/alerting/telegram.yaml
 grep -q 'bottoken: \$GF_TELEGRAM_BOT_TOKEN' config/grafana/provisioning/alerting/telegram.yaml
 grep -q '\$GF_TELEGRAM_CHAT_ID' config/grafana/provisioning/alerting/telegram.yaml
