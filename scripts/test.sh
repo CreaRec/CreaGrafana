@@ -142,6 +142,44 @@ if grep -qiE 'smtp|email' docker-compose.yml .env.example; then
 fi
 grep -q "\['disk', '=', 'media-usb'\]" config/grafana/provisioning/alerting/telegram.yaml
 grep -q 'define "crea_telegram.message"' config/grafana/provisioning/alerting/telegram.yaml
+grep -q 'template "crea_telegram.message"' config/grafana/provisioning/alerting/telegram.yaml
+grep -q 'parse_mode: None' config/grafana/provisioning/alerting/telegram.yaml
+# Default ValueString dumps var B/C labels; the custom template must not use it.
+if grep -q 'ValueString' config/grafana/provisioning/alerting/telegram.yaml; then
+  echo "telegram template must not include ValueString" >&2
+  exit 1
+fi
+# Temperature and other unit-bearing rules expose value_unit for the template.
+grep -q 'uid: media-usb-high-temperature' config/grafana/provisioning/alerting/media-usb-disk.yaml
+awk '
+  $0 ~ /uid: media-usb-high-temperature/ {in_rule=1}
+  in_rule && $0 ~ /^      - uid:/ && $0 !~ /media-usb-high-temperature/ {in_rule=0}
+  in_rule && $0 ~ /value_unit: "°C"/ {found=1}
+  END { if (!found) { print "media-usb-high-temperature must set value_unit °C" > "/dev/stderr"; exit 1 } }
+' config/grafana/provisioning/alerting/media-usb-disk.yaml
+# Provisioning YAML must parse (templates are literal blocks).
+python3 -c '
+import sys
+try:
+    import yaml
+except ImportError:
+    sys.exit(0)
+for path in (
+    "config/grafana/provisioning/alerting/telegram.yaml",
+    "config/grafana/provisioning/alerting/media-usb-disk.yaml",
+):
+    with open(path) as f:
+        data = yaml.safe_load(f)
+    if path.endswith("telegram.yaml"):
+        tpls = data.get("templates") or []
+        assert tpls, path
+        body = tpls[0]["template"]
+        assert "crea_telegram.message" in body
+        assert "ValueString" not in body
+        assert ".Values" in body
+        chatid = data["contactPoints"][0]["receivers"][0]["settings"]["chatid"]
+        assert chatid.endswith("\n") or chatid.endswith("\r\n"), "chatid must keep trailing newline"
+'
 # Bot tokens look like 123456789:AAH... — must never be committed.
 ! grep -RE '[0-9]{8,}:[A-Za-z0-9_-]{20,}' --include='*.yml' --include='*.yaml' --include='*.md' --include='*.example' --include='docker-compose.yml' config docs .env.example docker-compose.yml
 
