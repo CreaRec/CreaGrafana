@@ -72,6 +72,7 @@ groups:
         annotations:
           summary: "Media USB disk (/dev/sdb) SMART overall-health assessment failed"
           description: "SMART overall-health is no longer PASSED for /dev/sdb (/mnt/media-usb). Value: {{ $values.B }}."
+          device: "/dev/sdb"
         labels:
           severity: critical
           host: debian-server
@@ -139,6 +140,7 @@ groups:
         annotations:
           summary: "Media USB disk (/dev/sdb) reports bad/pending/uncorrectable sectors"
           description: "Sum of SMART ID 5 (reallocated) + ID 197 (pending) + ID 198 (offline uncorrectable) is {{ $values.B }} (> 0)."
+          device: "/dev/sdb"
         labels:
           severity: critical
           host: debian-server
@@ -206,6 +208,8 @@ groups:
         annotations:
           summary: "Media USB disk (/dev/sdb) temperature above 55C for 10m"
           description: "Current temperature is {{ $values.B }} C (threshold: 55 C)."
+          device: "/dev/sdb"
+          value_unit: "°C"
         labels:
           severity: warning
           host: debian-server
@@ -273,6 +277,8 @@ groups:
         annotations:
           summary: "Media USB (/mnt/media-usb) free space below 10%"
           description: "Available space on /mnt/media-usb is {{ $values.B }}%."
+          device: "/dev/sdb"
+          value_unit: "%"
         labels:
           severity: warning
           host: debian-server
@@ -340,6 +346,7 @@ groups:
         annotations:
           summary: "Media USB disk (/dev/sdb) or /mnt/media-usb mount is absent for 10m"
           description: "Either /dev/sdb is missing/unreadable or /mnt/media-usb is not mounted (product={{ $values.B }})."
+          device: "/dev/sdb"
         labels:
           severity: critical
           host: debian-server
@@ -407,6 +414,8 @@ groups:
         annotations:
           summary: "Media USB metrics collector has not reported for > 10m"
           description: "Age since last successful collection is {{ $values.B }}s (threshold: 600s)."
+          device: "/dev/sdb"
+          value_unit: " с"
         labels:
           severity: warning
           host: debian-server

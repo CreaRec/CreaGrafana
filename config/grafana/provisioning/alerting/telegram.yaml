@@ -3,19 +3,38 @@ apiVersion: 1
 # Notification templates are not env-interpolated, so Go template `$` is safe here.
 # Contact-point `settings` ARE interpolated: any `$name` becomes an env var
 # (empty if unset). Escape a literal `$` as `$$` if you add one there.
+#
+# Message text is plain (parse_mode: None). Several rule titles contain
+# `<`, `>`, and `°`; HTML/Markdown would need escaping and a parse error
+# becomes a Telegram 400 and a dropped notification.
 templates:
   - orgId: 1
     name: crea_telegram.message
     template: |
+      {{ define "crea_telegram.value" -}}
+      {{- if index .Values "B" -}}
+      {{- index .Values "B" -}}{{- with .Annotations.value_unit -}}{{- . -}}{{- end -}}
+      {{- else if .Annotations.value_display -}}
+      {{- .Annotations.value_display -}}
+      {{- else -}}н/д{{- end -}}
+      {{- end }}
+
+      {{ define "crea_telegram.where" -}}
+      {{- $host := index .Labels "host" -}}
+      {{- $device := or (index .Labels "device") (index .Annotations "device") -}}
+      {{- if or $host $device -}}
+      {{ $host }}{{ if and $host $device }} {{ end }}{{ $device }}
+      {{ end -}}
+      {{- end }}
+
       {{ define "crea_telegram.message" -}}
-      {{ range .Alerts -}}
-      <b>{{ .Labels.alertname }}</b> — {{ .Status | toUpper }}
-      {{ with .Annotations.summary }}{{ . }}
+      {{ range .Alerts.Firing -}}
+      🔥 {{ .Labels.alertname }}
+      Сейчас: {{ template "crea_telegram.value" . }}
+      {{ template "crea_telegram.where" . -}}
       {{ end -}}
-      {{ with .ValueString }}Value: {{ . }}
-      {{ end -}}
-      {{ with .DashboardURL }}<a href="{{ . }}">Open dashboard</a>
-      {{ end }}
+      {{ range .Alerts.Resolved -}}
+      ✅ Норма: {{ .Labels.alertname }}, сейчас {{ template "crea_telegram.value" . }}
       {{ end -}}
       {{ end }}
 
@@ -40,7 +59,7 @@ contactPoints:
           bottoken: $GF_TELEGRAM_BOT_TOKEN
           chatid: |
             $GF_TELEGRAM_CHAT_ID
-          parse_mode: HTML
+          parse_mode: None
           disable_web_page_preview: true
           message: '{{ template "crea_telegram.message" . }}'
 
