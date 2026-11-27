@@ -8,7 +8,7 @@ Upstream images: `grafana/alloy`, `grafana/loki`, `grafana/tempo`, `grafana/mimi
 
 1. Merge or push to `main`.
 2. Actions runs `./scripts/test.sh` (config contracts + `docker compose config`).
-3. Actions joins Tailscale (`tag:ci`), SCPs `docker-compose.yml` and `config/` to the server, then runs `docker compose pull && docker compose up -d`.
+3. Actions joins Tailscale (`tag:ci`), SCPs `docker-compose.yml` and `config/` to the server, then runs `docker compose pull && docker compose up -d`. If `docker-compose.yml` or `config/grafana/` changed, it also restarts the Grafana container and waits for `/api/health` — Grafana does not reload bind-mounted alert rules or dashboards on `up -d` alone. The deploy job fails if Grafana does not become healthy.
 
 Secrets and bind addresses stay on the server in `.env`. Data under `data/` is never overwritten by Actions.
 
