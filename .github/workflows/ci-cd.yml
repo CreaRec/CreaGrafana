@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       infra: ${{ steps.filter.outputs.infra }}
+      grafana: ${{ steps.filter.outputs.grafana }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -22,6 +23,9 @@ jobs:
             infra:
               - 'docker-compose.yml'
               - 'config/**'
+            grafana:
+              - 'docker-compose.yml'
+              - 'config/grafana/**'
 
   test:
     runs-on: ubuntu-latest
@@ -84,6 +88,7 @@ jobs:
         env:
           SSH_USER: ${{ secrets.DEPLOY_USER }}
           SERVER_HOST: ${{ secrets.DEPLOY_HOST }}
+          RELOAD_GRAFANA: ${{ needs.changes.outputs.grafana }}
         run: |
           set -euo pipefail
           SSH_TARGET="${SSH_USER}@${SERVER_HOST}"
@@ -108,6 +113,30 @@ jobs:
           docker compose up -d
           # export.sh is bind-mounted; content changes do not recreate the container by themselves
           docker compose up -d --force-recreate listen-ports
+          # Grafana does not reload bind-mounted provisioning (alert rules,
+          # dashboards) on up -d unless the container is recreated.
+          if [ '${RELOAD_GRAFANA}' = 'true' ]; then
+            echo "Restarting Grafana to reload provisioning"
+            docker compose restart grafana
+
+            echo "Waiting for Grafana /api/health"
+            healthy=0
+            for i in \$(seq 1 45); do
+              port="\$(docker compose port grafana 3000 2>/dev/null || true)"
+              if [ -n "\${port}" ] && curl -fsS --max-time 3 "http://\${port}/api/health" >/dev/null 2>&1; then
+                echo "Grafana is healthy"
+                healthy=1
+                break
+              fi
+              sleep 2
+            done
+            if [ "\${healthy}" -ne 1 ]; then
+              echo "ERROR: Grafana did not become healthy after restart" >&2
+              docker compose ps grafana >&2
+              docker compose logs --tail=80 grafana >&2
+              exit 1
+            fi
+          fi
           docker compose ps
           docker compose logs --tail=40
           EOF
